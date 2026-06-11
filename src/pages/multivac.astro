@@ -1,0 +1,68 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+<Layout
+  title="Multivac progress · Deep Pearl"
+  description="Live progress for Multivac while the research paper is under review."
+>
+  <article class="multivac wrap">
+    <a class="back" href="/">
+      <span aria-hidden="true">&larr;</span>
+      <span>Deep Pearl</span>
+    </a>
+
+    <div class="meta-row">
+      <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Multivac</p>
+      <span class="tag tag-review">Under review</span>
+    </div>
+    <h1>Multivac progress</h1>
+    <p class="lede">The staging home for Multivac while the research paper is under review.</p>
+
+    <div class="banner" role="status" aria-live="polite">
+      <span class="banner-tag">Live progress</span>
+      <p>Moves to themultivac.com once the research paper clears review.</p>
+    </div>
+
+    <section class="stub" id="changelog" aria-labelledby="changelog-h">
+      <header class="stub-head">
+        <h2 id="changelog-h">Changelog</h2>
+        <p class="stub-note">No entries yet</p>
+      </header>
+      <ol class="log" data-stub aria-hidden="true">
+        <li class="log-row">
+          <span class="col date"></span>
+          <span class="col line"></span>
+        </li>
+        <li class="log-row">
+          <span class="col date"></span>
+          <span class="col line"></span>
+        </li>
+        <li class="log-row">
+          <span class="col date"></span>
+          <span class="col line"></span>
+        </li>
+      </ol>
+    </section>
+
+    <section class="stub" id="metrics" aria-labelledby="metrics-h">
+      <header class="stub-head">
+        <h2 id="metrics-h">Metrics</h2>
+        <p class="stub-note">No metrics published yet</p>
+      </header>
+      <div class="metric-grid" data-stub aria-hidden="true">
+        <div class="metric">
+          <div class="bar-row"><span class="short"></span></div>
+          <div class="bar-row"><span class="long"></span><span class="short"></span></div>
+        </div>
+        <div class="metric">
+          <div class="bar-row"><span class="short"></span></div>
+          <div class="bar-row"><span class="long"></span><span class="short"></span></div>
+        </div>
+        <div class="metric">
+          <div class="bar-row"><span class="short"></span></div>
+          <div class="bar-row"><span class="long"></span><span class="short"></span></div>
+        </div>
+      </div>
+    </section>
+  </article>
+</Layout>
