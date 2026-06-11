@@ -125,9 +125,11 @@ svg {
 
 .site-nav {
   display: flex;
-  gap: 28px;
+  gap: 24px;
   font-size: 15px;
   color: var(--muted);
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .site-nav a:hover {
@@ -500,6 +502,35 @@ svg {
   width: 16px;
   height: 1px;
   background: var(--accent);
+}
+
+/* research page groups */
+.research-groups {
+  margin-top: 88px;
+  max-width: 64ch;
+  display: flex;
+  flex-direction: column;
+  gap: 56px;
+}
+
+.research-group h2 {
+  margin: 0 0 24px;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.applied-line {
+  margin: 80px 0 0;
+  padding-top: 40px;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  font-size: 17px;
+  line-height: 1.55;
+  max-width: 64ch;
 }
 
 /* currently studying list */
