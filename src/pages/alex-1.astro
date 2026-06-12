@@ -4,6 +4,7 @@ import Layout from '../layouts/Layout.astro';
 <Layout
   title="ALEX-1 · Deep Pearl AI"
   description="ALEX-1 is an adaptive home assistant that runs on the device, keeps personal data local, and learns from everyday use."
+  chapter="04"
 >
   <section class="page-hero">
     <div class="wrap">
@@ -26,7 +27,39 @@ import Layout from '../layouts/Layout.astro';
 
   <section class="section">
     <div class="wrap">
-      <div class="prose">
+      <figure class="figure" data-accrete>
+        <div class="plate membrane-plate">
+          <canvas id="membrane-canvas" aria-hidden="true"></canvas>
+          <span class="plate-label" style="top:14px;left:16px">ALEX-1 · LOCAL PERIMETER</span>
+          <span class="plate-label membrane-label">THE MEMBRANE</span>
+          <span class="plate-label red" style="bottom:14px;left:16px">RAW AUDIO — NEVER LEAVES</span>
+          <span class="plate-label" style="top:63%;left:74.5%">INTENT ONLY</span>
+          <span class="plate-label" style="top:33%;right:12px">CLOUD · OPTIONAL</span>
+        </div>
+        <p class="sr-only">
+          Diagram: a one-line floor plan of a house with the ALEX-1 node glowing
+          at its center. Voice pings expand as rings and echo off interior
+          walls; lamp, thermostat, and speaker glyphs brighten as each
+          wavefront passes. Red raw-audio packets stream toward a vertical
+          iridescent membrane at the edge of the home network and visibly
+          bounce back inside. Only an occasional pearl intent token crosses the
+          membrane and travels to a deliberately tiny, optional cloud.
+        </p>
+        <figcaption class="figcap">
+          <span><span class="fig-no">FIG. 3</span> — THE MEMBRANE</span>
+          <span class="fig-note">The intelligence lives where the data lives.</span>
+        </figcaption>
+        <div class="plate-controls">
+          <button type="button" class="plate-btn" id="membrane-ping">Ping the node</button>
+          <span class="plate-hint">Tap inside the floor plan to send a voice ping</span>
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="prose" data-accrete>
         <h2>The idea</h2>
         <p>
           Today's assistants are thin clients for someone else's cloud. Your
@@ -48,11 +81,11 @@ import Layout from '../layouts/Layout.astro';
 
   <section class="section">
     <div class="wrap">
-      <header class="section-header">
+      <header class="section-header" data-accrete>
         <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Architecture</p>
         <h2>Mind and body, cloud and edge</h2>
       </header>
-      <dl class="facts">
+      <dl class="facts" data-accrete>
         <div class="fact">
           <dt>The body</dt>
           <dd>The smart home product: voice pipeline, Home Assistant integration, Zigbee device control, and on-device models targeting Raspberry Pi-class hardware.</dd>
@@ -67,7 +100,7 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </dl>
 
-      <ol class="steps">
+      <ol class="steps" data-accrete>
         <li>
           <div>
             <h3>Develop in the cloud, deploy to the edge</h3>
@@ -112,7 +145,7 @@ import Layout from '../layouts/Layout.astro';
         </li>
       </ol>
 
-      <div class="callout">
+      <div class="callout" data-accrete>
         <p>
           <strong>Lessons flow in from EMOTE4D.</strong> Hardware reliability,
           edge deployment discipline, and honest failure modes were learned the
@@ -125,11 +158,11 @@ import Layout from '../layouts/Layout.astro';
 
   <section class="section">
     <div class="wrap">
-      <header class="section-header">
+      <header class="section-header" data-accrete>
         <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Research threads</p>
         <h2>What ALEX-1 exercises</h2>
       </header>
-      <div class="now-band">
+      <div class="now-band" data-accrete>
         <p class="label">Topics in play</p>
         <ul class="pill-list">
           <li>representation learning</li>
@@ -144,3 +177,579 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </section>
 </Layout>
+
+<style>
+  .membrane-plate {
+    aspect-ratio: 16 / 9;
+  }
+
+  .membrane-plate canvas {
+    cursor: crosshair;
+    touch-action: manipulation;
+  }
+
+  .membrane-label {
+    top: 50%;
+    left: calc(72% + 14px);
+    transform: translate(-50%, -50%) rotate(90deg);
+    letter-spacing: 0.3em;
+    color: var(--pearl-a);
+    white-space: nowrap;
+  }
+
+  .plate-hint {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (max-width: 700px) {
+    .membrane-plate {
+      aspect-ratio: 4 / 3;
+    }
+  }
+</style>
+
+<script>
+  import {
+    pearlLUT,
+    lutColor,
+    makeSim,
+    glowSprite,
+    reducedMotion,
+  } from '../lib/nacre.js';
+
+  function initAlex1() {
+    const canvas = document.getElementById('membrane-canvas');
+    if (!canvas || canvas.dataset.init) return;
+    canvas.dataset.init = '1';
+
+    const lut = pearlLUT(undefined, 256, 2.3);
+    // LUT zones: ~0 pearl-a, ~85 pearl-b, ~170 pearl-c
+    const nodeGlow = glowSprite(lut[8], 160, 1);
+    const glyphGlow = glowSprite(lut[85], 64, 0.9);
+    const tokenGlow = glowSprite(lut[170], 56, 1);
+    const cloudGlow = glowSprite(lut[170], 96, 0.8);
+
+    const RING_SPEED = 80; // px/s
+    const RING_LIFE = 2400; // ms
+
+    /* ------------------------- geometry ------------------------- */
+
+    let G = null; // rebuilt on resize
+    let plan = null; // offscreen: house floor plan + cloud glyph
+    let clock = 0;
+    let families = []; // voice ring families (cap 2)
+    let packets = []; // red raw-audio packets on polyline routes
+    let tokens = []; // pearl intent tokens on the bezier
+    let hits = []; // membrane rejections {y, t0}
+    let crossings = []; // membrane pearl crossings {y, t0}
+    let cloudFlash = -1e9;
+    let nextPacket = 400;
+    let nextToken = 2600;
+    let nextAuto = 1600;
+
+    function mkRoute(pts) {
+      const cum = [0];
+      for (let i = 1; i < pts.length; i++) {
+        cum.push(
+          cum[i - 1] +
+            Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y)
+        );
+      }
+      return { pts, cum, total: cum[cum.length - 1] };
+    }
+
+    function routePos(R, s) {
+      if (s <= 0) return R.pts[0];
+      for (let i = 1; i < R.pts.length; i++) {
+        if (s <= R.cum[i]) {
+          const f = (s - R.cum[i - 1]) / (R.cum[i] - R.cum[i - 1] || 1);
+          return {
+            x: R.pts[i - 1].x + (R.pts[i].x - R.pts[i - 1].x) * f,
+            y: R.pts[i - 1].y + (R.pts[i].y - R.pts[i - 1].y) * f,
+          };
+        }
+      }
+      return R.pts[R.pts.length - 1];
+    }
+
+    function buildGeometry(view) {
+      const { W, H } = view;
+      const x0 = W * 0.05,
+        x1 = W * 0.62,
+        y0 = H * 0.12,
+        y1 = H * 0.88;
+      const hw = x1 - x0,
+        hh = y1 - y0;
+      const xA = x0 + hw * 0.36; // top interior wall
+      const yA = y0 + hh * 0.56; // main horizontal wall
+      const xB = x0 + hw * 0.3; // bottom-left wall
+      const xC = x0 + hw * 0.64; // bottom-right wall
+      const node = { x: x0 + hw * 0.5, y: y0 + hh * 0.36 };
+      const mx = W * 0.72;
+      const my0 = H * 0.08,
+        my1 = H * 0.92;
+      const cloud = { x: W * 0.91, y: H * 0.27 };
+
+      const walls = [
+        { axis: 'v', pos: x0, a: y0, b: y1 },
+        { axis: 'v', pos: x1, a: y0, b: y1 },
+        { axis: 'h', pos: y0, a: x0, b: x1 },
+        { axis: 'h', pos: y1, a: x0, b: x1 },
+        { axis: 'v', pos: xA, a: y0, b: yA },
+        { axis: 'h', pos: yA, a: x0, b: x1 },
+        { axis: 'v', pos: xB, a: yA, b: y1 },
+        { axis: 'v', pos: xC, a: yA, b: y1 },
+      ];
+
+      const glyphs = [
+        { kind: 'lamp', x: x0 + hw * 0.15, y: y0 + hh * 0.3, hue: 0.08, flash: -1e9 },
+        { kind: 'thermo', x: x0 + hw * 0.84, y: y0 + hh * 0.22, hue: 0.36, flash: -1e9 },
+        { kind: 'lamp', x: x0 + hw * 0.14, y: y0 + hh * 0.78, hue: 0.55, flash: -1e9 },
+        { kind: 'speaker', x: x0 + hw * 0.82, y: y0 + hh * 0.76, hue: 0.7, flash: -1e9 },
+      ];
+
+      const bp = (y) => ({ x: mx - 3, y });
+      const redRoutes = [
+        mkRoute([{ x: glyphs[0].x, y: glyphs[0].y }, bp(glyphs[0].y + 10), { x: node.x, y: node.y }]),
+        mkRoute([{ x: glyphs[1].x, y: glyphs[1].y }, bp(glyphs[1].y + 6), { x: node.x, y: node.y }]),
+        mkRoute([{ x: glyphs[2].x, y: glyphs[2].y }, bp(glyphs[2].y - 8), { x: node.x, y: node.y }]),
+        mkRoute([{ x: glyphs[3].x, y: glyphs[3].y }, bp(glyphs[3].y - 12), { x: node.x, y: node.y }]),
+        mkRoute([{ x: node.x, y: node.y }, bp(H * 0.36), { x: glyphs[1].x, y: glyphs[1].y }]),
+        mkRoute([{ x: node.x, y: node.y }, bp(H * 0.64), { x: glyphs[3].x, y: glyphs[3].y }]),
+      ];
+
+      const intent = {
+        p0: { x: node.x, y: node.y },
+        p1: { x: W * 0.55, y: H * 0.72 },
+        p2: { x: W * 0.8, y: H * 0.66 },
+        p3: { x: cloud.x, y: cloud.y },
+      };
+
+      return { W, H, x0, x1, y0, y1, hw, hh, xA, yA, xB, xC, node, mx, my0, my1, cloud, walls, glyphs, redRoutes, intent };
+    }
+
+    function bez(u) {
+      const { p0, p1, p2, p3 } = G.intent;
+      const t = Math.min(1, Math.max(0, u));
+      const v = 1 - t;
+      const a = v * v * v,
+        b = 3 * v * v * t,
+        c = 3 * v * t * t,
+        d = t * t * t;
+      return {
+        x: a * p0.x + b * p1.x + c * p2.x + d * p3.x,
+        y: a * p0.y + b * p1.y + c * p2.y + d * p3.y,
+      };
+    }
+
+    function nearestWall(p) {
+      let best = null;
+      for (const w of G.walls) {
+        let d, mirror;
+        if (w.axis === 'v') {
+          if (p.y < w.a || p.y > w.b) continue;
+          d = Math.abs(p.x - w.pos);
+          mirror = { x: 2 * w.pos - p.x, y: p.y };
+        } else {
+          if (p.x < w.a || p.x > w.b) continue;
+          d = Math.abs(p.y - w.pos);
+          mirror = { x: p.x, y: 2 * w.pos - p.y };
+        }
+        if (d < 6) continue; // clicked on a wall — ignore that wall
+        if (!best || d < best.d) best = { d, mirror };
+      }
+      return best;
+    }
+
+    /* --------------- pre-rendered static layers ----------------- */
+
+    function buildPlan(view) {
+      const { W, H, DPR } = view;
+      const cv = document.createElement('canvas');
+      cv.width = Math.max(1, Math.round(W * DPR));
+      cv.height = Math.max(1, Math.round(H * DPR));
+      const p = cv.getContext('2d');
+      p.setTransform(DPR, 0, 0, DPR, 0, 0);
+      const { x0, x1, y0, y1, xA, yA, xB, xC, hw, hh, cloud } = G;
+      const v = (x, a, b) => {
+        p.moveTo(x, a);
+        p.lineTo(x, b);
+      };
+      const h = (y, a, b) => {
+        p.moveTo(a, y);
+        p.lineTo(b, y);
+      };
+
+      // the house — one path, one line weight, one stroke
+      p.strokeStyle = 'rgba(233,230,223,0.32)';
+      p.lineWidth = 1;
+      p.beginPath();
+      p.moveTo(x0, y0);
+      p.lineTo(x1, y0);
+      p.lineTo(x1, y1);
+      p.lineTo(x0, y1);
+      p.closePath();
+      v(xA, y0, y0 + hh * 0.18);
+      v(xA, y0 + hh * 0.32, yA);
+      h(yA, x0, x0 + hw * 0.1);
+      h(yA, x0 + hw * 0.22, x0 + hw * 0.42);
+      h(yA, x0 + hw * 0.54, x0 + hw * 0.72);
+      h(yA, x0 + hw * 0.84, x1);
+      v(xB, yA, yA + (y1 - yA) * 0.3);
+      v(xB, yA + (y1 - yA) * 0.55, y1);
+      v(xC, yA, yA + (y1 - yA) * 0.45);
+      v(xC, yA + (y1 - yA) * 0.7, y1);
+      p.stroke();
+
+      // the deliberately tiny cloud — two stroked arcs
+      p.strokeStyle = 'rgba(154,160,164,0.55)';
+      p.lineWidth = 1;
+      p.beginPath();
+      p.arc(cloud.x, cloud.y + 2, 7, Math.PI * 0.55, Math.PI * 2.1);
+      p.arc(cloud.x + 5, cloud.y - 3, 5, Math.PI * 0.9, Math.PI * 2.35);
+      p.stroke();
+
+      return cv;
+    }
+
+    // membrane gradient strip — built once, scaled at draw time
+    const strip = (() => {
+      const cv = document.createElement('canvas');
+      cv.width = 32;
+      cv.height = 256;
+      const s = cv.getContext('2d');
+      const gv = s.createLinearGradient(0, 0, 0, 256);
+      for (let i = 0; i <= 6; i++) {
+        const c = lut[(20 + i * 36) % 256];
+        gv.addColorStop(i / 6, `rgb(${c[0]},${c[1]},${c[2]})`);
+      }
+      s.fillStyle = gv;
+      s.fillRect(0, 0, 32, 256);
+      const gh = s.createLinearGradient(0, 0, 32, 0);
+      gh.addColorStop(0, 'rgba(0,0,0,0)');
+      gh.addColorStop(0.5, 'rgba(0,0,0,0.9)');
+      gh.addColorStop(1, 'rgba(0,0,0,0)');
+      s.globalCompositeOperation = 'destination-in';
+      s.fillStyle = gh;
+      s.fillRect(0, 0, 32, 256);
+      return cv;
+    })();
+
+    /* ----------------------- the living model ------------------- */
+
+    function ping(x, y) {
+      const w = nearestWall({ x, y });
+      if (families.length >= 2) families.shift();
+      families.push({
+        d: w ? w.d : 1e9,
+        mirror: w ? w.mirror : null,
+        spawned: !w,
+        rings: [{ x, y, born: clock, lastR: 0, child: false }],
+      });
+    }
+
+    function drawGlyph(ctx, g, bright) {
+      if (bright > 0.02) {
+        ctx.globalAlpha = bright * 0.85;
+        ctx.drawImage(glyphGlow, g.x - 20, g.y - 20, 40, 40);
+        ctx.globalAlpha = 1;
+      }
+      ctx.strokeStyle = lutColor(lut, g.hue, 0.45 + bright * 0.55);
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      if (g.kind === 'lamp') {
+        ctx.arc(g.x, g.y - 4, 4.5, 0, Math.PI * 2);
+        ctx.moveTo(g.x, g.y + 0.5);
+        ctx.lineTo(g.x, g.y + 8);
+      } else if (g.kind === 'thermo') {
+        ctx.arc(g.x, g.y, 6, Math.PI * 0.75, Math.PI * 2.25);
+        ctx.moveTo(g.x, g.y);
+        ctx.lineTo(g.x + 3.5, g.y - 3.5);
+      } else {
+        ctx.rect(g.x - 5, g.y - 6, 10, 12);
+        ctx.moveTo(g.x + 2, g.y);
+        ctx.arc(g.x, g.y, 2, 0, Math.PI * 2);
+      }
+      ctx.stroke();
+    }
+
+    function drawMembrane(ctx, alpha) {
+      ctx.globalAlpha = alpha;
+      ctx.drawImage(strip, G.mx - 14, G.my0, 28, G.my1 - G.my0);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = 'rgba(174,191,214,0.3)';
+      ctx.fillRect(G.mx - 0.5, G.my0, 1, G.my1 - G.my0);
+    }
+
+    function drawNode(ctx, scale) {
+      const nr = 26 * scale;
+      ctx.drawImage(nodeGlow, G.node.x - nr, G.node.y - nr, nr * 2, nr * 2);
+      ctx.fillStyle = lutColor(lut, 0.04, 0.95);
+      ctx.beginPath();
+      ctx.arc(G.node.x, G.node.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function render(ctx, t, dt, view) {
+      clock += dt;
+      const { W, H } = view;
+      ctx.clearRect(0, 0, W, H);
+      if (!G) return;
+
+      ctx.drawImage(plan, 0, 0, W, H);
+
+      // membrane — gentle 0.5 Hz breath
+      drawMembrane(ctx, 0.55 + 0.15 * Math.sin(clock * 0.00314));
+
+      // idle auto-ping from the node (~7 s)
+      if (clock >= nextAuto) {
+        nextAuto = clock + 6500 + Math.random() * 1500;
+        if (families.length < 2) ping(G.node.x, G.node.y);
+      }
+
+      // voice rings: expand, decay, echo once off the nearest wall
+      families = families.filter((f) =>
+        f.rings.some((r) => clock - r.born < RING_LIFE)
+      );
+      families.forEach((f) => {
+        f.rings.forEach((r) => {
+          const age = clock - r.born;
+          if (age < 0 || age > RING_LIFE) return;
+          const rad = 2 + (age / 1000) * RING_SPEED;
+          // wavefront passes a device → it pulses for ~600 ms
+          G.glyphs.forEach((g) => {
+            const d = Math.hypot(g.x - r.x, g.y - r.y);
+            if (r.lastR < d && rad >= d) g.flash = clock;
+          });
+          // one mirrored echo when the parent reaches its wall
+          if (!r.child && !f.spawned && rad >= f.d) {
+            f.spawned = true;
+            f.rings.push({
+              x: f.mirror.x,
+              y: f.mirror.y,
+              born: clock,
+              lastR: 0,
+              child: true,
+            });
+          }
+          r.lastR = rad;
+          const alpha =
+            Math.max(0, 1 - age / RING_LIFE) * (r.child ? 0.16 : 0.32);
+          ctx.strokeStyle = lutColor(lut, 0.02 + (rad / 320) * 0.3, alpha);
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(r.x, r.y, rad, 0, Math.PI * 2);
+          ctx.stroke();
+        });
+      });
+
+      // node — 0.5 Hz pulse
+      drawNode(ctx, 1 + 0.14 * Math.sin(clock * 0.00314));
+
+      // device glyphs
+      G.glyphs.forEach((g) => {
+        const k = Math.max(0, 1 - (clock - g.flash) / 600);
+        drawGlyph(ctx, g, k * k);
+      });
+
+      // red raw-audio packets — toward the membrane, bounced back inside
+      const cap = view.degraded ? 20 : 40;
+      if (clock >= nextPacket && packets.length < cap) {
+        packets.push({
+          ri: (Math.random() * G.redRoutes.length) | 0,
+          s: 0,
+          v: 70 + Math.random() * 50,
+          passed: false,
+        });
+        nextPacket = clock + (view.degraded ? 760 : 380) + Math.random() * 240;
+      }
+      packets = packets.filter((p) => {
+        const R = G.redRoutes[p.ri];
+        p.s += (p.v * dt) / 1000;
+        if (!p.passed && p.s >= R.cum[1]) {
+          p.passed = true;
+          hits.push({ y: R.pts[1].y, t0: clock });
+        }
+        return p.s < R.total;
+      });
+      ctx.fillStyle = 'rgba(194,69,47,0.9)';
+      packets.forEach((p) => {
+        const pos = routePos(G.redRoutes[p.ri], p.s);
+        ctx.fillRect(pos.x - 1.75, pos.y - 1.75, 3.5, 3.5);
+      });
+
+      // membrane rejections — brief press-red ticks where audio bounced
+      hits = hits.filter((hh) => clock - hh.t0 < 320);
+      hits.forEach((hh) => {
+        const k = 1 - (clock - hh.t0) / 320;
+        ctx.fillStyle = `rgba(194,69,47,${0.65 * k})`;
+        ctx.fillRect(G.mx - 1, hh.y - 7, 2, 14);
+      });
+
+      // the rare intent token — through the membrane, out to the cloud
+      if (clock >= nextToken && tokens.length < 2) {
+        tokens.push({ u: 0, crossed: false });
+        nextToken = clock + 4500 + Math.random() * 1500;
+      }
+      tokens = tokens.filter((tok) => {
+        tok.u += dt / 3000;
+        const pos = bez(tok.u);
+        if (!tok.crossed && pos.x >= G.mx) {
+          tok.crossed = true;
+          crossings.push({ y: pos.y, t0: clock });
+        }
+        if (tok.u >= 1) {
+          cloudFlash = clock;
+          return false;
+        }
+        ctx.globalAlpha = 0.5;
+        ctx.drawImage(tokenGlow, pos.x - 10, pos.y - 10, 20, 20);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = lutColor(lut, 0.66, 0.95);
+        ctx.fillRect(pos.x - 2, pos.y - 2, 4, 4);
+        return true;
+      });
+
+      // pearl shimmer where a token crossed
+      crossings = crossings.filter((cr) => clock - cr.t0 < 420);
+      crossings.forEach((cr) => {
+        const k = 1 - (clock - cr.t0) / 420;
+        ctx.globalAlpha = k * 0.9;
+        ctx.drawImage(tokenGlow, G.mx - 14, cr.y - 14, 28, 28);
+        ctx.globalAlpha = 1;
+      });
+
+      // cloud acknowledges an arrival
+      const ck = Math.max(0, 1 - (clock - cloudFlash) / 700);
+      if (ck > 0) {
+        ctx.globalAlpha = ck * 0.8;
+        ctx.drawImage(cloudGlow, G.cloud.x - 22, G.cloud.y - 22, 44, 44);
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    /* -------------------- composed end-state -------------------- */
+
+    function renderStill(ctx, view) {
+      const { W, H } = view;
+      ctx.clearRect(0, 0, W, H);
+      if (!G) return;
+
+      ctx.drawImage(plan, 0, 0, W, H);
+      drawMembrane(ctx, 0.65);
+      drawNode(ctx, 1);
+
+      // one ring family caught mid-propagation: parent past its wall,
+      // mirrored echo already born
+      const w = nearestWall(G.node);
+      const d = w ? w.d : Math.min(G.hw, G.hh) * 0.2;
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = lutColor(lut, 0.1, 0.28);
+      ctx.beginPath();
+      ctx.arc(G.node.x, G.node.y, d * 1.25, 0, Math.PI * 2);
+      ctx.stroke();
+      if (w) {
+        ctx.strokeStyle = lutColor(lut, 0.16, 0.15);
+        ctx.beginPath();
+        ctx.arc(w.mirror.x, w.mirror.y, d * 0.25, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // glyphs — one caught mid-flash by the wavefront
+      G.glyphs.forEach((g, i) => drawGlyph(ctx, g, i === 0 ? 0.55 : 0));
+
+      // six frozen packets: 2 red bouncing at the membrane, 3 red inside
+      const R = G.redRoutes;
+      ctx.fillStyle = 'rgba(194,69,47,0.9)';
+      [
+        routePos(R[1], R[1].cum[1] - 8), // about to bounce
+        routePos(R[2], R[2].cum[1] + 14), // just bounced, heading back in
+        routePos(R[0], R[0].total * 0.4),
+        routePos(R[3], R[3].total * 0.55),
+        routePos(R[4], R[4].total * 0.5),
+      ].forEach((pos) => ctx.fillRect(pos.x - 1.75, pos.y - 1.75, 3.5, 3.5));
+      // the rejection tick frozen at the bounce point
+      ctx.fillStyle = 'rgba(194,69,47,0.5)';
+      ctx.fillRect(G.mx - 1, R[2].pts[1].y - 7, 2, 14);
+
+      // one pearl intent token frozen just past the membrane
+      let u = 0.4;
+      let cross = null;
+      while (u < 0.96) {
+        const p = bez(u);
+        if (!cross && p.x >= G.mx) cross = p;
+        if (p.x >= G.mx + W * 0.03) break;
+        u += 0.01;
+      }
+      const tp = bez(u);
+      if (cross) {
+        ctx.globalAlpha = 0.5;
+        ctx.drawImage(tokenGlow, G.mx - 14, cross.y - 14, 28, 28);
+        ctx.globalAlpha = 1;
+      }
+      ctx.globalAlpha = 0.5;
+      ctx.drawImage(tokenGlow, tp.x - 10, tp.y - 10, 20, 20);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = lutColor(lut, 0.66, 0.95);
+      ctx.fillRect(tp.x - 2, tp.y - 2, 4, 4);
+    }
+
+    /* -------------------------- wire up -------------------------- */
+
+    const sim = makeSim(canvas, {
+      render,
+      renderStill,
+      init(view) {
+        if (!view.W || !view.H) return;
+        G = buildGeometry(view);
+        plan = buildPlan(view);
+        families = [];
+        packets = [];
+        tokens = [];
+        hits = [];
+        crossings = [];
+        cloudFlash = -1e9;
+        nextAuto = clock + 1600;
+        nextPacket = clock + 300;
+        nextToken = clock + 2600;
+      },
+    });
+
+    canvas.addEventListener('click', (e) => {
+      if (reducedMotion || !G) return;
+      const r = canvas.getBoundingClientRect();
+      const x = e.clientX - r.left;
+      const y = e.clientY - r.top;
+      if (x > G.x0 && x < G.x1 && y > G.y0 && y < G.y1) ping(x, y);
+    });
+
+    const btn = document.getElementById('membrane-ping');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        if (reducedMotion || !G) {
+          sim.restart();
+          return;
+        }
+        ping(G.node.x, G.node.y);
+      });
+    }
+  }
+
+  document.addEventListener('astro:page-load', initAlex1);
+</script>

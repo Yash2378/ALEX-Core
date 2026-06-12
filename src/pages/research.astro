@@ -4,6 +4,7 @@ import Layout from '../layouts/Layout.astro';
 <Layout
   title="Research · Deep Pearl AI"
   description="The Deep Pearl AI research agenda: perception and 3D, representation learning, reasoning and symbol, agents and control, and scaling."
+  chapter="01"
 >
   <section class="page-hero">
     <div class="wrap">
@@ -23,6 +24,24 @@ import Layout from '../layouts/Layout.astro';
 
   <section class="section">
     <div class="wrap">
+      <figure class="figure" data-accrete>
+        <div class="plate strata-plate">
+          <canvas id="strata-canvas" aria-hidden="true"></canvas>
+          <nav class="depth-gauge" aria-label="Depth gauge: research strata">
+            <a href="#g-3d" style="top: 12.5%"><span class="tick" aria-hidden="true"></span>Perception / 3D</a>
+            <a href="#g-rep" style="top: 28%"><span class="tick" aria-hidden="true"></span>Representation</a>
+            <a href="#g-sym" style="top: 44%"><span class="tick" aria-hidden="true"></span>Reasoning / Symbol</a>
+            <a href="#g-agents" style="top: 60%"><span class="tick" aria-hidden="true"></span>Agents / Control</a>
+            <a href="#g-scale" style="top: 76%"><span class="tick" aria-hidden="true"></span>Scaling</a>
+          </nav>
+          <span class="plate-label" style="top:14px;right:16px">CORE SAMPLE &middot; DEEP PEARL</span>
+        </div>
+        <figcaption class="figcap">
+          <span><span class="fig-no">FIG. 5</span> &mdash; STRATA</span>
+          <span class="fig-note">The lab's record as accumulated layers.</span>
+        </figcaption>
+      </figure>
+
       <div class="now-band">
         <p class="label">Currently learning</p>
         <ul class="pill-list">
@@ -35,7 +54,7 @@ import Layout from '../layouts/Layout.astro';
         </ul>
       </div>
 
-      <div class="research-groups">
+      <div class="research-groups" data-accrete>
         <section class="research-group" aria-labelledby="g-3d">
           <h2 id="g-3d">Perception and 3D</h2>
           <p class="group-note">How machines recover and edit the structure of the physical world.</p>
@@ -110,3 +129,261 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </section>
 </Layout>
+
+<style>
+  .strata-plate {
+    aspect-ratio: 16 / 9;
+  }
+
+  /* depth gauge — a core logger's scale, pinned to the plate's left edge */
+  .depth-gauge {
+    position: absolute;
+    inset: 0 auto 0 0;
+    z-index: 2;
+  }
+
+  .depth-gauge::before {
+    content: "";
+    position: absolute;
+    left: 18px;
+    top: 5%;
+    bottom: 4%;
+    width: 1px;
+    background: var(--border);
+  }
+
+  .depth-gauge a {
+    position: absolute;
+    left: 18px;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--faint);
+    transition: color 140ms ease;
+  }
+
+  .depth-gauge a .tick {
+    width: 14px;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.75;
+    flex: none;
+  }
+
+  .depth-gauge a:hover,
+  .depth-gauge a:focus-visible {
+    color: var(--text);
+  }
+
+  @media (max-width: 700px) {
+    .strata-plate {
+      aspect-ratio: 4 / 3;
+    }
+
+    .depth-gauge a {
+      font-size: 9px;
+      gap: 6px;
+    }
+
+    .depth-gauge a .tick {
+      width: 10px;
+    }
+  }
+</style>
+
+<script>
+  import {
+    pearlLUT,
+    lutColor,
+    makeNoise,
+    makeSim,
+    reducedMotion,
+  } from '../lib/nacre.js';
+
+  function initResearch() {
+    const c = document.getElementById('strata-canvas');
+    if (!c || c.dataset.init) return;
+    c.dataset.init = '1';
+
+    const lut = pearlLUT(undefined, 256, 2.3);
+    const { fbm } = makeNoise(19);
+
+    /* ------------- FIG. 5 — STRATA: the lab sawn in half ------------- */
+    /* Seven noise-displaced boundaries → six sediment bands.
+       Bands render once per resize to their OWN offscreen layer;
+       per frame: clear + 6 drawImage (scroll parallax) + ~40 grit dots. */
+
+    // boundary base fractions of H (last one sits below the canvas)
+    const FRAC = [0.05, 0.2, 0.36, 0.52, 0.68, 0.84, 1.04];
+    // band hue stations on the pearl LUT
+    const HUE = [0.0, 0.18, 0.36, 0.52, 0.68, 0.85];
+    // parallax travel in px — deeper strata move slower
+    const RATE = [10, 8, 6.4, 4.8, 3.2, 1.8];
+    const BANDS = 6;
+    const PAD = 16; // vertical headroom on each layer for parallax shifts
+
+    // seeded rand so the grit field is stable across resizes
+    let s = 0x9e3779b9;
+    const rand = () => {
+      s ^= s << 13;
+      s ^= s >>> 17;
+      s ^= s << 5;
+      s >>>= 0;
+      return s / 4294967296;
+    };
+
+    // ~42 grit particles, distributed through the bands
+    const COUNTS = [8, 8, 8, 8, 6, 4];
+    const dots = [];
+    COUNTS.forEach((n, b) => {
+      const bandFrac = Math.min(FRAC[b + 1], 1) - FRAC[b];
+      for (let i = 0; i < n; i++) {
+        dots.push({
+          b,
+          fx: 0.03 + rand() * 0.94,
+          fy: FRAC[b] + (0.24 + rand() * 0.56) * bandFrac,
+          r: 1.5 + rand(),
+          amp: 1.4 + rand() * 1.6,
+          ph: rand() * Math.PI * 2,
+          sp: 0.6 + rand() * 0.8,
+          css: lutColor(lut, (HUE[b] + rand() * 0.08) % 1, 0.92),
+        });
+      }
+    });
+
+    function boundaryY(i, x, H) {
+      const amp = 8 + i; // 8..14px displacement, deeper = rougher
+      return H * FRAC[i] + fbm(x * 0.0065 + i * 13.7, i * 7.31, 2.1, 2) * amp * 1.4;
+    }
+
+    let layers = null;
+
+    function buildLayers(view) {
+      const { W, H, DPR } = view;
+      layers = [];
+      const step = 8;
+      for (let b = 0; b < BANDS; b++) {
+        const off = document.createElement('canvas');
+        off.width = Math.max(1, Math.round(W * DPR));
+        off.height = Math.max(1, Math.round((H + PAD * 2) * DPR));
+        const g = off.getContext('2d');
+        g.setTransform(DPR, 0, 0, DPR, 0, PAD * DPR);
+
+        // fill: from this band's top curve down past the layer bottom —
+        // the next (deeper) band paints over, so seams can never open
+        // when layers shift at different parallax rates.
+        g.beginPath();
+        g.moveTo(-2, boundaryY(b, -2, H));
+        for (let x = 0; x <= W + step; x += step) g.lineTo(x, boundaryY(b, x, H));
+        g.lineTo(W + 2, H + PAD + 2);
+        g.lineTo(-2, H + PAD + 2);
+        g.closePath();
+
+        const top = H * FRAC[b];
+        const bandH = H * (FRAC[b + 1] - FRAC[b]);
+        const grad = g.createLinearGradient(0, top - 14, 0, top + bandH * 1.7);
+        grad.addColorStop(0, lutColor(lut, HUE[b], b === BANDS - 1 ? 0.12 : 0.16));
+        grad.addColorStop(0.5, lutColor(lut, HUE[b], 0.1));
+        grad.addColorStop(1, lutColor(lut, HUE[b], 0));
+        g.fillStyle = grad;
+        g.fill();
+
+        // brighter 1px top boundary stroke
+        g.beginPath();
+        g.moveTo(-2, boundaryY(b, -2, H));
+        for (let x = 0; x <= W + step; x += step) g.lineTo(x, boundaryY(b, x, H));
+        g.strokeStyle = lutColor(lut, HUE[b], b === BANDS - 1 ? 0.35 : 0.55);
+        g.lineWidth = 1;
+        g.stroke();
+
+        layers.push(off);
+      }
+    }
+
+    /* --------- scroll parallax: rAF-throttled, deeper = slower -------- */
+
+    let targetP = 0;
+    let curP = 0;
+    let queued = false;
+
+    function computeP() {
+      const r = c.getBoundingClientRect();
+      const vh = window.innerHeight || 1;
+      const p = (r.top + r.height / 2 - vh / 2) / vh;
+      targetP = Math.max(-1, Math.min(1, p));
+    }
+
+    function onScroll() {
+      if (!c.isConnected) {
+        window.removeEventListener('scroll', onScroll);
+        return;
+      }
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => {
+        queued = false;
+        computeP();
+      });
+    }
+
+    if (!reducedMotion) {
+      window.addEventListener('scroll', onScroll, { passive: true });
+      computeP();
+      curP = targetP;
+    }
+
+    function drawDots(ctx, view, t, offs) {
+      const { W, H } = view;
+      const n = view.degraded ? Math.round(dots.length * 0.7) : dots.length;
+      for (let i = 0; i < n; i++) {
+        const d = dots[i];
+        const bob = Math.sin(t * 0.0004 * d.sp + d.ph) * d.amp;
+        ctx.fillStyle = d.css;
+        ctx.beginPath();
+        ctx.arc(
+          d.fx * W,
+          d.fy * H + bob + (offs ? offs[d.b] : 0),
+          d.r,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+      }
+    }
+
+    makeSim(c, {
+      init(view) {
+        buildLayers(view);
+      },
+      render(ctx, t, dt, view) {
+        const { W, H } = view;
+        ctx.clearRect(0, 0, W, H);
+        curP += (targetP - curP) * Math.min(1, dt * 0.008);
+        if (layers) {
+          for (let b = 0; b < BANDS; b++) {
+            ctx.drawImage(layers[b], 0, -curP * RATE[b] - PAD, W, H + PAD * 2);
+          }
+        }
+        const offs = RATE.map((r) => -curP * r);
+        drawDots(ctx, view, t, offs);
+      },
+      renderStill(ctx, view) {
+        const { W, H } = view;
+        if (!layers) buildLayers(view);
+        for (let b = 0; b < BANDS; b++) {
+          ctx.drawImage(layers[b], 0, -PAD, W, H + PAD * 2);
+        }
+        // composed end-state: settled grit, no bobbing
+        drawDots(ctx, view, 7000, null);
+      },
+    });
+  }
+
+  document.addEventListener('astro:page-load', initResearch);
+</script>

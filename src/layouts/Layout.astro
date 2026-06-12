@@ -1,9 +1,11 @@
 ---
+import { ClientRouter } from 'astro:transitions';
 import '../styles/global.css';
 const {
   title = 'Deep Pearl AI',
   description = 'Deep Pearl AI is an independent research lab studying AI evaluation, edge intelligence, and machines that understand the physical world.',
   ogType = 'website',
+  chapter = '',
 } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site).toString();
@@ -30,6 +32,13 @@ const nav = [
     <link rel="canonical" href={canonical} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,300..600,0..100,0..1&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&display=swap"
+    />
+
     <meta property="og:site_name" content="Deep Pearl AI" />
     <meta property="og:type" content={ogType} />
     <meta property="og:title" content={title} />
@@ -47,10 +56,11 @@ const nav = [
     <meta name="twitter:image:alt" content="Deep Pearl AI" />
 
     <title>{title}</title>
+    <ClientRouter />
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
-    <header class="site-header">
+    <header class="site-header" transition:persist="header">
       <div class="wrap">
         <a href="/" class="wordmark" aria-label="Deep Pearl AI home">
           <span class="pearl" aria-hidden="true"></span>
@@ -67,6 +77,7 @@ const nav = [
       </div>
     </header>
     <main id="main" tabindex="-1">
+      {chapter && <span class="ghost-num" aria-hidden="true">{chapter}</span>}
       <slot />
     </main>
     <footer class="site-footer">
@@ -105,10 +116,14 @@ const nav = [
           </div>
         </div>
         <div class="footer-base">
-          <span>Deep Pearl AI. Independent research.</span>
+          <span>Deep Pearl AI · Independent research</span>
           <span>deeppearlai.com</span>
         </div>
       </div>
     </footer>
+    <script>
+      import { initPage } from '../lib/nacre.js';
+      document.addEventListener('astro:page-load', initPage);
+    </script>
   </body>
 </html>

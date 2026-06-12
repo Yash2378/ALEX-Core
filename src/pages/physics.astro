@@ -4,9 +4,10 @@ import Layout from '../layouts/Layout.astro';
 <Layout
   title="Multivac Physics · Deep Pearl AI"
   description="Multivac Physics runs graduate-level physics problems through a blind cross-family peer matrix to measure scientific reasoning in frontier models."
+  chapter="03"
 >
   <section class="page-hero">
-    <div class="wrap">
+    <div class="wrap" data-accrete>
       <a class="back" href="/">
         <span aria-hidden="true">&larr;</span>
         <span>Deep Pearl AI</span>
@@ -28,8 +29,63 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </section>
 
-  <section class="section">
+  <section class="section" id="sensitive-dependence">
     <div class="wrap">
+      <header class="section-header" data-accrete>
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Instrument</p>
+        <h2>The difference a thousandth makes</h2>
+        <p class="kicker">
+          Three copies of the same double pendulum, integrated live with the
+          fourth-order Runge&ndash;Kutta a problem set demands. Their starting
+          angles differ by &epsilon;. For about six seconds they agree.
+          Then they don't.
+        </p>
+      </header>
+
+      <figure class="figure" data-accrete>
+        <div class="plate dp-plate">
+          <canvas id="dp-canvas" aria-hidden="true"></canvas>
+          <span class="plate-label" style="top:14px;left:16px">RK4 &middot; h = 4 ms &middot; &times;3 systems</span>
+          <span class="plate-label" style="top:14px;right:16px" id="dp-eps-label">&epsilon; = 1e-3 rad</span>
+          <span class="plate-label" style="bottom:14px;left:16px">m&#8321;=m&#8322;=1 &middot; L&#8321;=L&#8322;=1 &middot; g = 9.81</span>
+        </div>
+
+        <p class="readout dp-readout" role="status" aria-live="off">
+          <span>T+<strong id="dp-ro-t">0.0s</strong></span>
+          <span>&Vert;&Delta;&theta;&Vert; S1&rarr;S3 <strong id="dp-ro-div">2.0e-3</strong> rad</span>
+          <span class="dp-key" style="--k: var(--pearl-a)">S1 &middot; &theta;&minus;&epsilon;</span>
+          <span class="dp-key" style="--k: var(--pearl-b)">S2 &middot; &theta;</span>
+          <span class="dp-key" style="--k: var(--pearl-c)">S3 &middot; &theta;+&epsilon;</span>
+        </p>
+
+        <div class="plate-controls">
+          <button type="button" class="plate-btn" id="dp-reset">Reset triplet</button>
+          <label class="plate-slider">
+            <span>&epsilon; = 10^x</span>
+            <input
+              type="range"
+              id="dp-eps"
+              min="-5"
+              max="-1"
+              step="0.5"
+              value="-3"
+              aria-label="Initial angle offset epsilon, as a power of ten"
+            />
+            <output id="dp-eps-out" for="dp-eps">1e-3</output>
+          </label>
+          <span class="dp-hint mono">Drag any bob to re-fling all three</span>
+        </div>
+
+        <figcaption class="figcap">
+          <span><span class="fig-no">FIG. 2</span> — SENSITIVE DEPENDENCE</span>
+          <span class="fig-note">Three systems, identical to one part in a thousand. Rigor, not vibes.</span>
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap" data-accrete>
       <div class="prose">
         <h2>Why physics</h2>
         <p>
@@ -53,11 +109,11 @@ import Layout from '../layouts/Layout.astro';
 
   <section class="section">
     <div class="wrap">
-      <header class="section-header">
+      <header class="section-header" data-accrete>
         <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Method</p>
         <h2>The same discipline, harder questions</h2>
       </header>
-      <dl class="facts">
+      <dl class="facts" data-accrete>
         <div class="fact">
           <dt>Problem set</dt>
           <dd>Graduate-level problems across mechanics, electromagnetism, thermodynamics, and quantum — written fresh, not scraped.</dd>
@@ -72,7 +128,7 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </dl>
 
-      <div class="callout">
+      <div class="callout" data-accrete>
         <p>
           <strong>Cross-family confirmation</strong> is the heart of it: a
           solution is only credited when judges from different model families
@@ -85,3 +141,386 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </section>
 </Layout>
+
+<style>
+  .dp-plate {
+    aspect-ratio: 16 / 9;
+  }
+
+  .dp-plate canvas {
+    touch-action: none;
+    cursor: crosshair;
+  }
+
+  .dp-readout {
+    margin-top: 14px;
+    text-transform: none;
+    letter-spacing: 0.06em;
+  }
+
+  .dp-key {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .dp-key::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--k, var(--pearl-a));
+    flex: none;
+  }
+
+  .dp-hint {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+
+  @media (max-width: 720px) {
+    .dp-plate {
+      aspect-ratio: 4 / 3;
+    }
+  }
+</style>
+
+<script>
+  import {
+    pearlLUT,
+    makeSim,
+    glowSprite,
+    reducedMotion,
+  } from '../lib/nacre.js';
+
+  function initPhysics() {
+    const canvas = document.getElementById('dp-canvas');
+    if (!canvas || canvas.dataset.init) return;
+    canvas.dataset.init = '1';
+
+    const lut = pearlLUT(undefined, 256, 2.3);
+    // pearl-a / pearl-b / pearl-c anchors of the LUT
+    const COLS = [lut[0], lut[85], lut[170]];
+    const col = (i, a) => `rgba(${COLS[i][0]},${COLS[i][1]},${COLS[i][2]},${a})`;
+    const glows = COLS.map((c) => glowSprite(c, 48, 0.9));
+
+    /* ---------------- the model: real RK4 double pendulum -------- */
+    const G = 9.81, L1 = 1, L2 = 1, M1 = 1, M2 = 1;
+    const H_STEP = 0.004; // 250 Hz integrator
+
+    const deriv = ([a1, w1, a2, w2]) => {
+      const d = a1 - a2;
+      const den = 2 * M1 + M2 - M2 * Math.cos(2 * d);
+      const dw1 =
+        (-G * (2 * M1 + M2) * Math.sin(a1) -
+          M2 * G * Math.sin(a1 - 2 * a2) -
+          2 * Math.sin(d) * M2 * (w2 * w2 * L2 + w1 * w1 * L1 * Math.cos(d))) /
+        (L1 * den);
+      const dw2 =
+        (2 *
+          Math.sin(d) *
+          (w1 * w1 * L1 * (M1 + M2) +
+            G * (M1 + M2) * Math.cos(a1) +
+            w2 * w2 * L2 * M2 * Math.cos(d))) /
+        (L2 * den);
+      return [w1, dw1, w2, dw2];
+    };
+
+    const rk4 = (st, h) => {
+      const k1 = deriv(st);
+      const k2 = deriv(st.map((x, i) => x + (h / 2) * k1[i]));
+      const k3 = deriv(st.map((x, i) => x + (h / 2) * k2[i]));
+      const k4 = deriv(st.map((x, i) => x + h * k3[i]));
+      return st.map(
+        (x, i) => x + (h / 6) * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i])
+      );
+    };
+
+    /* ---------------- state: a triplet split by epsilon ---------- */
+    const DEF_A1 = 2.0, DEF_A2 = 1.2; // tears apart ~6s in at 1e-3
+    let baseA1 = DEF_A1;
+    let baseA2 = DEF_A2;
+    let eps = 1e-3;
+    let systems = [];
+    let simT = 0;
+    let acc = 0;
+    let hudAcc = 1000;
+    let freeze = false;
+    let dragging = false;
+
+    function buildSystems() {
+      systems = [
+        [baseA1 - eps, 0, baseA2, 0],
+        [baseA1, 0, baseA2, 0],
+        [baseA1 + eps, 0, baseA2, 0],
+      ];
+    }
+    buildSystems();
+
+    /* ---------------- geometry (pivot top-center) ----------------- */
+    let cx = 0, cy = 0, plen = 0;
+    function setGeom(v) {
+      cx = v.W / 2;
+      cy = v.H * 0.26;
+      plen = v.H * 0.33;
+    }
+    const bob1 = (s) => [cx + Math.sin(s[0]) * plen, cy + Math.cos(s[0]) * plen];
+    const tip = (s) => [
+      cx + (Math.sin(s[0]) + Math.sin(s[2])) * plen,
+      cy + (Math.cos(s[0]) + Math.cos(s[2])) * plen,
+    ];
+
+    /* ---------------- persistent trail canvas --------------------- */
+    const trail = document.createElement('canvas');
+    const tctx = trail.getContext('2d');
+    let prevTips = [null, null, null];
+
+    function sizeTrail(v) {
+      setGeom(v);
+      trail.width = Math.max(1, Math.round(v.W * v.DPR));
+      trail.height = Math.max(1, Math.round(v.H * v.DPR));
+      tctx.setTransform(v.DPR, 0, 0, v.DPR, 0, 0);
+      prevTips = [null, null, null];
+    }
+
+    function clearTrail() {
+      tctx.save();
+      tctx.setTransform(1, 0, 0, 1, 0, 0);
+      tctx.clearRect(0, 0, trail.width, trail.height);
+      tctx.restore();
+      prevTips = [null, null, null];
+    }
+
+    /* ---------------- HTML instrument readout --------------------- */
+    const roT = document.getElementById('dp-ro-t');
+    const roDiv = document.getElementById('dp-ro-div');
+    const epsLabel = document.getElementById('dp-eps-label');
+    const epsOut = document.getElementById('dp-eps-out');
+
+    const divergence = () =>
+      Math.hypot(systems[0][0] - systems[2][0], systems[0][2] - systems[2][2]);
+
+    function updateHud() {
+      if (!roT) return;
+      roT.textContent = `${simT.toFixed(1)}s`;
+      roDiv.textContent = divergence().toExponential(1);
+    }
+    updateHud();
+
+    /* ---------------- drawing -------------------------------------- */
+    function drawRods(ctx, alpha, withGlow) {
+      for (let i = 0; i < 3; i++) {
+        const s = systems[i];
+        const [x1, y1] = bob1(s);
+        const [x2, y2] = tip(s);
+        ctx.strokeStyle = col(i, alpha);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.fillStyle = col(i, Math.min(1, alpha + 0.25));
+        ctx.beginPath();
+        ctx.arc(x1, y1, 2.2, 0, Math.PI * 2);
+        ctx.fill();
+        if (withGlow) ctx.drawImage(glows[i], x2 - 11, y2 - 11, 22, 22);
+        ctx.fillStyle = col(i, 0.9);
+        ctx.beginPath();
+        ctx.arc(x2, y2, 2.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // pivot mount
+      ctx.fillStyle = 'rgba(233,230,223,0.5)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 2.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function render(ctx, t, dt, view) {
+      setGeom(view);
+      const h = view.degraded ? 0.008 : H_STEP; // governor: fewer RK4 steps
+      if (!freeze) {
+        acc += dt / 1000;
+        let guard = 0;
+        while (acc >= h && guard < 14) {
+          for (let i = 0; i < 3; i++) systems[i] = rk4(systems[i], h);
+          simT += h;
+          acc -= h;
+          guard++;
+        }
+        if (acc > h) acc = 0; // dump backlog after long stalls
+      }
+
+      // history sinks like chalk dust
+      tctx.globalCompositeOperation = 'source-over';
+      tctx.fillStyle = 'rgba(4,5,10,0.012)';
+      tctx.fillRect(0, 0, view.W, view.H);
+
+      // each tip plots one small segment per frame
+      if (!freeze) {
+        tctx.globalCompositeOperation = 'lighter';
+        tctx.lineWidth = 1;
+        for (let i = 0; i < 3; i++) {
+          const p = tip(systems[i]);
+          const q = prevTips[i];
+          if (q) {
+            tctx.strokeStyle = col(i, 0.45);
+            tctx.beginPath();
+            tctx.moveTo(q[0], q[1]);
+            tctx.lineTo(p[0], p[1]);
+            tctx.stroke();
+          }
+          prevTips[i] = p;
+        }
+      }
+
+      ctx.clearRect(0, 0, view.W, view.H);
+      ctx.drawImage(trail, 0, 0, view.W, view.H);
+      drawRods(ctx, 0.35, !view.degraded);
+
+      hudAcc += dt;
+      if (hudAcc >= 250) {
+        hudAcc = 0;
+        updateHud();
+      }
+    }
+
+    /* composed end-state: 2600 steps headless, full diverged trails */
+    function renderStill(ctx, view) {
+      setGeom(view);
+      let sys = [
+        [baseA1 - eps, 0, baseA2, 0],
+        [baseA1, 0, baseA2, 0],
+        [baseA1 + eps, 0, baseA2, 0],
+      ];
+      const N = 2600;
+      const pts = [[], [], []];
+      for (let k = 0; k < N; k++) {
+        for (let i = 0; i < 3; i++) {
+          sys[i] = rk4(sys[i], H_STEP);
+          pts[i].push(tip(sys[i]));
+        }
+      }
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.lineWidth = 1;
+      const BUCKET = 130;
+      for (let i = 0; i < 3; i++) {
+        for (let b = 0; b < N - 1; b += BUCKET) {
+          const end = Math.min(N - 1, b + BUCKET);
+          // older history fainter, like the live fade
+          ctx.strokeStyle = col(i, 0.05 + 0.4 * Math.pow(end / N, 2));
+          ctx.beginPath();
+          ctx.moveTo(pts[i][b][0], pts[i][b][1]);
+          for (let k = b + 1; k <= end; k++) ctx.lineTo(pts[i][k][0], pts[i][k][1]);
+          ctx.stroke();
+        }
+      }
+      ctx.globalCompositeOperation = 'source-over';
+      systems = sys; // renderStill only runs under reduced motion
+      simT = N * H_STEP;
+      drawRods(ctx, 0.5, true);
+      updateHud();
+    }
+
+    const sim = makeSim(canvas, { render, renderStill, init: sizeTrail });
+
+    /* ---------------- controls ------------------------------------ */
+    function restartTriplet() {
+      buildSystems();
+      simT = 0;
+      acc = 0;
+      hudAcc = 1000;
+      clearTrail();
+      updateHud();
+      if (reducedMotion) sim.restart();
+    }
+
+    const resetBtn = document.getElementById('dp-reset');
+    if (resetBtn)
+      resetBtn.addEventListener('click', () => {
+        baseA1 = DEF_A1;
+        baseA2 = DEF_A2;
+        restartTriplet();
+      });
+
+    const epsInput = document.getElementById('dp-eps');
+    if (epsInput)
+      epsInput.addEventListener('input', () => {
+        const x = parseFloat(epsInput.value);
+        eps = Math.pow(10, x);
+        const fmt = eps.toExponential(0);
+        if (epsOut) epsOut.value = fmt;
+        if (epsLabel) epsLabel.textContent = `ε = ${fmt} rad`;
+        restartTriplet();
+      });
+
+    /* drag any bob to re-fling the whole triplet ------------------- */
+    const localPos = (e) => {
+      const r = canvas.getBoundingClientRect();
+      return [e.clientX - r.left, e.clientY - r.top];
+    };
+
+    function hitBob(p) {
+      for (let i = 0; i < 3; i++) {
+        const b = bob1(systems[i]);
+        const q = tip(systems[i]);
+        if (Math.hypot(p[0] - b[0], p[1] - b[1]) < 14) return true;
+        if (Math.hypot(p[0] - q[0], p[1] - q[1]) < 14) return true;
+      }
+      return false;
+    }
+
+    function applyDrag(p) {
+      // angle from downward vertical at the pivot
+      const phi = Math.atan2(p[0] - cx, p[1] - cy);
+      baseA1 = phi;
+      baseA2 = phi;
+      buildSystems();
+      simT = 0;
+      updateHud();
+    }
+
+    canvas.addEventListener('pointerdown', (e) => {
+      const p = localPos(e);
+      if (!hitBob(p)) return;
+      dragging = true;
+      freeze = true;
+      try {
+        canvas.setPointerCapture(e.pointerId);
+      } catch {}
+      canvas.style.cursor = 'grabbing';
+      clearTrail();
+      applyDrag(p);
+      e.preventDefault();
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      const p = localPos(e);
+      if (dragging) {
+        applyDrag(p);
+      } else if (plen > 0) {
+        canvas.style.cursor = hitBob(p) ? 'grab' : 'crosshair';
+      }
+    });
+
+    const release = () => {
+      if (!dragging) return;
+      dragging = false;
+      freeze = false;
+      canvas.style.cursor = 'crosshair';
+      simT = 0;
+      acc = 0;
+      hudAcc = 1000;
+      clearTrail();
+      updateHud();
+      if (reducedMotion) sim.restart();
+    };
+    canvas.addEventListener('pointerup', release);
+    canvas.addEventListener('pointercancel', release);
+  }
+
+  document.addEventListener('astro:page-load', initPhysics);
+</script>

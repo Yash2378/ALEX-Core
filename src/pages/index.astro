@@ -3,16 +3,26 @@ import Layout from '../layouts/Layout.astro';
 ---
 <Layout>
   <section class="hero">
+    <canvas class="hero-canvas" id="pearl-canvas" aria-hidden="true"></canvas>
     <div class="wrap">
       <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Independent research lab</p>
-      <h1>Intelligence, measured.<br /><span class="shimmer">Intelligence, embodied.</span></h1>
+      <h1>
+        <span class="lp"><span style="--i:0">Intelligence, measured.</span></span>
+        <span class="lp"><span style="--i:1"><span class="shimmer">Intelligence, embodied.</span></span></span>
+      </h1>
       <p class="lede">
         Deep Pearl AI studies two sides of the same question: <strong>how do we
         know an AI system actually works</strong> — and how do we build systems
         that keep working in the physical world, on real hardware, with real
         people depending on them.
       </p>
-      <dl class="meta">
+      <p class="readout" id="pearl-readout" role="status" aria-live="off">
+        <span>NACRE&nbsp;SIM</span>
+        <span>LAYER <strong id="ro-layer">00/44</strong></span>
+        <span>&Delta;r <strong id="ro-dr">0.00px</strong></span>
+        <span>T+<strong id="ro-t">0.0s</strong></span>
+      </p>
+      <dl class="meta" style="margin-top: 36px">
         <div>
           <dt>Evaluation</dt>
           <dd>Multivac &amp; Multivac Physics</dd>
@@ -31,92 +41,86 @@ import Layout from '../layouts/Layout.astro';
 
   <section class="section" id="ventures">
     <div class="wrap">
-      <header class="section-header">
+      <header class="section-header" data-accrete>
         <p class="eyebrow"><span class="bar" aria-hidden="true"></span>The work</p>
         <h2>Four ventures, one thesis</h2>
         <p class="kicker">
           Frontier models are judged by benchmarks they can game, then deployed
           on hardware they were never built for. We work both ends of that gap.
+          Each instrument below is a working model of its research — open the
+          drawer to see it run.
         </p>
       </header>
-      <div class="ventures">
-        <article class="venture">
-          <div class="venture-head">
-            <h3>Multivac</h3>
-            <span class="tag tag-review">Paper under review</span>
+      <div class="ventures" data-accrete>
+        <article class="venture sheen">
+          <div class="specimen"><canvas data-motif="multivac" aria-hidden="true"></canvas></div>
+          <div class="venture-body">
+            <div class="venture-head">
+              <h3>Multivac</h3>
+              <span class="tag tag-review">Paper under review</span>
+            </div>
+            <p class="role">Fig. 1 · The peer matrix</p>
+            <p class="desc">
+              Independent, blind evaluation of frontier language models. Fresh
+              questions models haven't memorized, judged by a cross-family peer
+              matrix — no vendor grades its own homework.
+            </p>
+            <span class="venture-link">Open Multivac <span class="arrow" aria-hidden="true">&rarr;</span></span>
           </div>
-          <p class="role">AI model evaluation</p>
-          <p class="desc">
-            Independent, blind evaluation of frontier language models. Fresh
-            questions models haven't memorized, judged by a cross-family peer
-            matrix so no vendor grades its own homework.
-          </p>
-          <ul class="topic-tags" aria-label="Topics">
-            <li>blind peer matrix</li>
-            <li>same-vendor judge bias</li>
-            <li>evaluation independence</li>
-          </ul>
-          <span class="venture-link">Open Multivac <span class="arrow" aria-hidden="true">&rarr;</span></span>
           <a class="cover" href="/multivac" aria-label="Multivac"></a>
         </article>
 
-        <article class="venture">
-          <div class="venture-head">
-            <h3>Multivac Physics</h3>
-            <span class="tag tag-live">Live</span>
+        <article class="venture sheen">
+          <div class="specimen"><canvas data-motif="physics" aria-hidden="true"></canvas></div>
+          <div class="venture-body">
+            <div class="venture-head">
+              <h3>Multivac Physics</h3>
+              <span class="tag tag-live">Live</span>
+            </div>
+            <p class="role">Fig. 2 · Sensitive dependence</p>
+            <p class="desc">
+              Graduate-level physics problems through the same blind peer
+              matrix — measuring whether models reason about the physical
+              world or pattern-match around it.
+            </p>
+            <span class="venture-link">Open Physics <span class="arrow" aria-hidden="true">&rarr;</span></span>
           </div>
-          <p class="role">Scientific reasoning evaluation</p>
-          <p class="desc">
-            Graduate-level physics problems run through the same blind peer
-            matrix, measuring whether models reason about the physical world or
-            pattern-match around it.
-          </p>
-          <ul class="topic-tags" aria-label="Topics">
-            <li>physics evaluation</li>
-            <li>cross-family confirmation</li>
-            <li>scientific reasoning</li>
-          </ul>
-          <span class="venture-link">Open Physics <span class="arrow" aria-hidden="true">&rarr;</span></span>
           <a class="cover" href="/physics" aria-label="Multivac Physics"></a>
         </article>
 
-        <article class="venture">
-          <div class="venture-head">
-            <h3>ALEX-1</h3>
-            <span class="tag tag-active">Active prototype</span>
+        <article class="venture sheen">
+          <div class="specimen"><canvas data-motif="alex1" aria-hidden="true"></canvas></div>
+          <div class="venture-body">
+            <div class="venture-head">
+              <h3>ALEX-1</h3>
+              <span class="tag tag-active">Active prototype</span>
+            </div>
+            <p class="role">Fig. 3 · The membrane</p>
+            <p class="desc">
+              A home assistant that runs on the device, keeps personal data
+              local, and learns from everyday use — voice, emotion, and smart
+              home control without a cloud dependency at its core.
+            </p>
+            <span class="venture-link">Open ALEX-1 <span class="arrow" aria-hidden="true">&rarr;</span></span>
           </div>
-          <p class="role">Adaptive edge assistant</p>
-          <p class="desc">
-            A home assistant that runs on the device, keeps personal data
-            local, and learns from everyday use — voice, emotion, and smart
-            home control without a cloud dependency at its core.
-          </p>
-          <ul class="topic-tags" aria-label="Topics">
-            <li>on-device inference</li>
-            <li>hybrid cloud–edge</li>
-            <li>adaptive learning</li>
-          </ul>
-          <span class="venture-link">Open ALEX-1 <span class="arrow" aria-hidden="true">&rarr;</span></span>
           <a class="cover" href="/alex-1" aria-label="ALEX-1"></a>
         </article>
 
-        <article class="venture">
-          <div class="venture-head">
-            <h3>EMOTE4D</h3>
-            <span class="tag tag-pilot">In pilot</span>
+        <article class="venture sheen">
+          <div class="specimen"><canvas data-motif="emote4d" aria-hidden="true"></canvas></div>
+          <div class="venture-body">
+            <div class="venture-head">
+              <h3>EMOTE4D</h3>
+              <span class="tag tag-pilot">In pilot</span>
+            </div>
+            <p class="role">Fig. 4 · Pixels stop here</p>
+            <p class="desc">
+              On-device computer vision that detects falls in eldercare without
+              sending video anywhere. Skeleton-only processing, sanity gates
+              between every stage, live on Raspberry Pi hardware.
+            </p>
+            <span class="venture-link">Open EMOTE4D <span class="arrow" aria-hidden="true">&rarr;</span></span>
           </div>
-          <p class="role">Fall detection for eldercare</p>
-          <p class="desc">
-            On-device computer vision that detects falls without sending video
-            anywhere. Skeleton-only processing, sanity gates between every
-            pipeline stage, running on Raspberry Pi hardware in a live pilot.
-          </p>
-          <ul class="topic-tags" aria-label="Topics">
-            <li>privacy-preserving vision</li>
-            <li>edge deployment</li>
-            <li>safety-critical ML</li>
-          </ul>
-          <span class="venture-link">Open EMOTE4D <span class="arrow" aria-hidden="true">&rarr;</span></span>
           <a class="cover" href="/emote4d" aria-label="EMOTE4D"></a>
         </article>
       </div>
@@ -125,11 +129,11 @@ import Layout from '../layouts/Layout.astro';
 
   <section class="section" id="principles">
     <div class="wrap">
-      <header class="section-header">
+      <header class="section-header" data-accrete>
         <p class="eyebrow"><span class="bar" aria-hidden="true"></span>How we work</p>
         <h2>First principles, honestly reported</h2>
       </header>
-      <div class="principles">
+      <div class="principles" data-accrete>
         <article class="principle">
           <span class="num">01</span>
           <h3>No one grades their own homework</h3>
@@ -162,7 +166,7 @@ import Layout from '../layouts/Layout.astro';
   </section>
 
   <section class="section" id="research-preview">
-    <div class="wrap">
+    <div class="wrap" data-accrete>
       <header class="section-header">
         <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Research</p>
         <h2>What we're studying</h2>
@@ -188,3 +192,336 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </section>
 </Layout>
+
+<script>
+  import {
+    pearlLUT,
+    lutColor,
+    makeNoise,
+    makeSim,
+    glowSprite,
+    reducedMotion,
+  } from '../lib/nacre.js';
+
+  function initHome() {
+    const heroCanvas = document.getElementById('pearl-canvas');
+    if (!heroCanvas || heroCanvas.dataset.init) return;
+    heroCanvas.dataset.init = '1';
+
+    const lut = pearlLUT(undefined, 256, 2.4);
+    const { fbm } = makeNoise(7);
+
+    /* ---------------- The Accretion — hero pearl ---------------- */
+
+    const RINGS = 44;
+    const light = glowSprite([240, 238, 232], 256, 0.5);
+    const core = glowSprite(lut[40], 256, 0.9);
+    const roLayer = document.getElementById('ro-layer');
+    const roDr = document.getElementById('ro-dr');
+    const roT = document.getElementById('ro-t');
+
+    let px = -1;
+    let py = -1;
+    const hero = heroCanvas.closest('.hero');
+    hero.addEventListener(
+      'pointermove',
+      (e) => {
+        const r = heroCanvas.getBoundingClientRect();
+        px = e.clientX - r.left;
+        py = e.clientY - r.top;
+      },
+      { passive: true }
+    );
+    hero.addEventListener('pointerleave', () => {
+      px = -1;
+      py = -1;
+    });
+
+    const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+    let roTick = 0;
+
+    function drawPearl(ctx, t, view, still) {
+      const { W, H } = view;
+      const narrow = W < 700;
+      const cx = narrow ? W * 0.5 : W * 0.7;
+      const cy = narrow ? H * 0.24 : H * 0.42;
+      const R = Math.min(W, H) * (narrow ? 0.34 : 0.42);
+
+      ctx.clearRect(0, 0, W, H);
+
+      // light position: cursor, or slow autonomous orbit
+      let lx, ly;
+      if (px >= 0) {
+        lx = px;
+        ly = py;
+      } else {
+        lx = cx + Math.cos(t * 0.00012) * R * 0.8;
+        ly = cy + Math.sin(t * 0.00009) * R * 0.6;
+      }
+      const aim = Math.atan2(ly - cy, lx - cx);
+
+      const grown = still ? RINGS : Math.min(RINGS, easeOut(Math.min(1, t / 2600)) * RINGS);
+      const segs = view.degraded ? 56 : 88;
+
+      ctx.globalCompositeOperation = 'lighter';
+
+      // pearl core
+      const coreR = R * 0.5 * (grown / RINGS);
+      ctx.globalAlpha = 0.5;
+      ctx.drawImage(core, cx - coreR, cy - coreR, coreR * 2, coreR * 2);
+      ctx.globalAlpha = 1;
+
+      let lastAmp = 0;
+      const n = Math.floor(grown);
+      for (let i = 0; i < n; i++) {
+        const br = R * Math.pow((i + 1) / RINGS, 0.92);
+        const A = R * 0.05 * (0.4 + i / RINGS);
+        lastAmp = A;
+        ctx.beginPath();
+        for (let s = 0; s <= segs; s++) {
+          const th = (s / segs) * Math.PI * 2;
+          const sway = px >= 0 || !still ? 1 + 0.45 * Math.cos(th - aim) : 1;
+          const r =
+            br +
+            A *
+              sway *
+              fbm(
+                Math.cos(th) * 1.6 + i * 0.31,
+                Math.sin(th) * 1.6,
+                (still ? 8000 : t) * 0.00012 + i * 0.07,
+                2
+              );
+          const x = cx + Math.cos(th) * r;
+          const y = cy + Math.sin(th) * r;
+          s === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.strokeStyle = lutColor(
+          lut,
+          (i / RINGS + (still ? 0 : t * 0.00002)) % 1,
+          0.13
+        );
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // the light source
+      ctx.globalCompositeOperation = 'screen';
+      ctx.globalAlpha = 0.32;
+      ctx.drawImage(light, lx - 170, ly - 170, 340, 340);
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'source-over';
+
+      // instrument readout
+      if (roLayer && ++roTick % 6 === 0) {
+        roLayer.textContent = `${String(n).padStart(2, '0')}/${RINGS}`;
+        roDr.textContent = `${lastAmp.toFixed(2)}px`;
+        roT.textContent = `${(t / 1000).toFixed(1)}s`;
+      }
+    }
+
+    makeSim(heroCanvas, {
+      render: (ctx, t, dt, view) => drawPearl(ctx, t, view, false),
+      renderStill: (ctx, view) => {
+        drawPearl(ctx, 8000, view, true);
+        if (roLayer) {
+          roLayer.textContent = `${RINGS}/${RINGS}`;
+          roDr.textContent = '2.20px';
+          roT.textContent = '—';
+        }
+      },
+    });
+
+    /* -------------- specimen drawers — card motifs --------------- */
+
+    const motifs = {
+      multivac(ctx, v) {
+        const { W, H } = v;
+        const n = 8;
+        const pad = 14;
+        const cell = Math.min((W - pad * 2) / n, (H - pad * 2) / n);
+        const ox = (W - cell * n) / 2;
+        const oy = (H - cell * n) / 2;
+        for (let r = 0; r < n; r++) {
+          for (let c = 0; c < n; c++) {
+            const x = ox + c * cell;
+            const y = oy + r * cell;
+            if (r === c) {
+              ctx.strokeStyle = 'rgba(194,69,47,0.75)';
+              ctx.lineWidth = 1;
+              ctx.strokeRect(x + 1.5, y + 1.5, cell - 3, cell - 3);
+              ctx.beginPath();
+              ctx.moveTo(x + 2.5, y + cell - 2.5);
+              ctx.lineTo(x + cell - 2.5, y + 2.5);
+              ctx.stroke();
+              continue;
+            }
+            const h = (Math.sin(r * 12.9898 + c * 78.233) * 43758.5453) % 1;
+            const heat = Math.abs(h);
+            ctx.fillStyle = lutColor(lut, (r * n + c) / (n * n), 0.08 + heat * 0.4);
+            ctx.fillRect(x + 1.5, y + 1.5, cell - 3, cell - 3);
+          }
+        }
+      },
+
+      physics(ctx, v) {
+        const { W, H } = v;
+        // double pendulum, RK4, traced
+        const g = 9.81, L1 = 1, L2 = 1, m1 = 1, m2 = 1;
+        let s = [2.6, 0, 2.1, 0];
+        const deriv = ([a1, w1, a2, w2]) => {
+          const d = a1 - a2;
+          const den = 2 * m1 + m2 - m2 * Math.cos(2 * d);
+          const dw1 =
+            (-g * (2 * m1 + m2) * Math.sin(a1) -
+              m2 * g * Math.sin(a1 - 2 * a2) -
+              2 * Math.sin(d) * m2 * (w2 * w2 * L2 + w1 * w1 * L1 * Math.cos(d))) /
+            (L1 * den);
+          const dw2 =
+            (2 *
+              Math.sin(d) *
+              (w1 * w1 * L1 * (m1 + m2) +
+                g * (m1 + m2) * Math.cos(a1) +
+                w2 * w2 * L2 * m2 * Math.cos(d))) /
+            (L2 * den);
+          return [w1, dw1, w2, dw2];
+        };
+        const step = (st, h) => {
+          const k1 = deriv(st);
+          const k2 = deriv(st.map((x, i) => x + (h / 2) * k1[i]));
+          const k3 = deriv(st.map((x, i) => x + (h / 2) * k2[i]));
+          const k4 = deriv(st.map((x, i) => x + h * k3[i]));
+          return st.map((x, i) => x + (h / 6) * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]));
+        };
+        const cx = W / 2, cy = H * 0.38, scale = H * 0.34;
+        ctx.globalCompositeOperation = 'lighter';
+        let lastX = null, lastY = null;
+        for (let i = 0; i < 5200; i++) {
+          s = step(s, 0.004);
+          const x = cx + (Math.sin(s[0]) + Math.sin(s[2])) * scale * 0.5;
+          const y = cy + (Math.cos(s[0]) + Math.cos(s[2])) * scale * 0.5;
+          if (lastX !== null) {
+            ctx.strokeStyle = lutColor(lut, (i / 5200) % 1, 0.22);
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+          }
+          lastX = x;
+          lastY = y;
+        }
+        ctx.globalCompositeOperation = 'source-over';
+      },
+
+      alex1(ctx, v) {
+        const { W, H } = v;
+        const hx = W * 0.12, hy = H * 0.18, hw = W * 0.52, hh = H * 0.64;
+        ctx.strokeStyle = 'rgba(233,230,223,0.35)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(hx, hy, hw, hh);
+        ctx.beginPath();
+        ctx.moveTo(hx + hw * 0.45, hy);
+        ctx.lineTo(hx + hw * 0.45, hy + hh * 0.55);
+        ctx.moveTo(hx, hy + hh * 0.55);
+        ctx.lineTo(hx + hw * 0.7, hy + hh * 0.55);
+        ctx.stroke();
+        // node + rings
+        const nx = hx + hw * 0.62, ny = hy + hh * 0.3;
+        const dot = glowSprite(lut[180], 64, 1);
+        ctx.drawImage(dot, nx - 14, ny - 14, 28, 28);
+        for (let i = 1; i <= 3; i++) {
+          ctx.strokeStyle = lutColor(lut, 0.7, 0.3 - i * 0.07);
+          ctx.beginPath();
+          ctx.arc(nx, ny, i * 16, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        // membrane
+        const mx = W * 0.74;
+        const grad = ctx.createLinearGradient(mx - 4, 0, mx + 4, 0);
+        grad.addColorStop(0, 'rgba(174,191,214,0)');
+        grad.addColorStop(0.5, 'rgba(174,191,214,0.5)');
+        grad.addColorStop(1, 'rgba(174,191,214,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(mx - 4, H * 0.1, 8, H * 0.8);
+        // packets: red stay inside, one pearl token crosses
+        ctx.fillStyle = 'rgba(194,69,47,0.8)';
+        ctx.fillRect(W * 0.56, H * 0.62, 4, 4);
+        ctx.fillRect(W * 0.47, H * 0.4, 4, 4);
+        ctx.fillStyle = lutColor(lut, 0.85, 0.9);
+        ctx.fillRect(W * 0.84, H * 0.4, 4, 4);
+        // tiny cloud
+        ctx.strokeStyle = 'rgba(154,160,164,0.5)';
+        ctx.beginPath();
+        ctx.arc(W * 0.92, H * 0.38, 5, Math.PI * 0.6, Math.PI * 2.2);
+        ctx.arc(W * 0.945, H * 0.36, 4, Math.PI, Math.PI * 2.4);
+        ctx.stroke();
+      },
+
+      emote4d(ctx, v) {
+        const { W, H } = v;
+        // left: unreadable mosaic
+        const bw = 7, bh = 9;
+        const cw = (W * 0.4) / bw, ch = H / bh;
+        for (let r = 0; r < bh; r++) {
+          for (let c = 0; c < bw; c++) {
+            const g = 14 + Math.abs(Math.sin(r * 7.13 + c * 3.71)) * 36;
+            ctx.fillStyle = `rgb(${g | 0},${g | 0},${(g + 4) | 0})`;
+            ctx.fillRect(c * cw, r * ch, cw - 1, ch - 1);
+          }
+        }
+        // boundary
+        ctx.strokeStyle = 'rgba(233,230,223,0.4)';
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(W * 0.46, 6);
+        ctx.lineTo(W * 0.46, H - 6);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // right: 17-keypoint skeleton, mid-stride
+        const P = {
+          head: [0.72, 0.18], neck: [0.72, 0.3], rsh: [0.66, 0.32], lsh: [0.78, 0.32],
+          rel: [0.63, 0.45], lel: [0.82, 0.43], rwr: [0.61, 0.56], lwr: [0.85, 0.53],
+          hip: [0.72, 0.55], rhp: [0.685, 0.55], lhp: [0.755, 0.55],
+          rkn: [0.66, 0.71], lkn: [0.79, 0.7], ran: [0.64, 0.87], lan: [0.815, 0.86],
+        };
+        const pt = (k) => [P[k][0] * W, P[k][1] * H];
+        const bones = [
+          ['head', 'neck'], ['neck', 'rsh'], ['neck', 'lsh'], ['rsh', 'rel'],
+          ['rel', 'rwr'], ['lsh', 'lel'], ['lel', 'lwr'], ['neck', 'hip'],
+          ['hip', 'rhp'], ['hip', 'lhp'], ['rhp', 'rkn'], ['rkn', 'ran'],
+          ['lhp', 'lkn'], ['lkn', 'lan'],
+        ];
+        ctx.strokeStyle = lutColor(lut, 0.15, 0.8);
+        ctx.lineWidth = 1.5;
+        bones.forEach(([a, b]) => {
+          ctx.beginPath();
+          ctx.moveTo(...pt(a));
+          ctx.lineTo(...pt(b));
+          ctx.stroke();
+        });
+        Object.keys(P).forEach((k, i) => {
+          const [x, y] = pt(k);
+          ctx.fillStyle = lutColor(lut, (i / 17 + 0.1) % 1, 1);
+          ctx.beginPath();
+          ctx.arc(x, y, 2.4, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      },
+    };
+
+    document.querySelectorAll('[data-motif]').forEach((c) => {
+      const fn = motifs[c.dataset.motif];
+      if (!fn) return;
+      makeSim(c, {
+        render: (ctx, t, dt, view) => {
+          ctx.clearRect(0, 0, view.W, view.H);
+          fn(ctx, view);
+        },
+        renderStill: (ctx, view) => fn(ctx, view),
+        fps: 1, // effectively static; redraw only on resize ticks
+      });
+    });
+  }
+
+  document.addEventListener('astro:page-load', initHome);
+</script>

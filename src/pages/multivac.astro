@@ -1,9 +1,36 @@
 ---
 import Layout from '../layouts/Layout.astro';
+
+const MODELS = [
+  { id: 'M-01', name: 'Claude' },
+  { id: 'M-02', name: 'GPT-4o' },
+  { id: 'M-03', name: 'Gemini' },
+  { id: 'M-04', name: 'Llama' },
+  { id: 'M-05', name: 'Mistral' },
+  { id: 'M-06', name: 'DeepSeek' },
+  { id: 'M-07', name: 'Grok' },
+  { id: 'M-08', name: 'Qwen' },
+];
+
+/* Baked aggregate verdicts. Rows = judges, columns = answerers, -1 = recused.
+   Row M-03 is a harsh judge, row M-07 a lenient one. Column M-01 is the
+   strongest answerer, column M-07 the weakest. Two leniency anomalies sit
+   above their row baselines: M-02 judging M-05, and M-08 judging M-06. */
+const MATRIX = [
+  [-1.0, 0.55, 0.66, 0.42, 0.49, 0.61, 0.36, 0.58],
+  [0.78, -1.0, 0.71, 0.51, 0.69, 0.68, 0.45, 0.63],
+  [0.61, 0.45, -1.0, 0.34, 0.41, 0.55, 0.28, 0.48],
+  [0.80, 0.62, 0.75, -1.0, 0.56, 0.72, 0.47, 0.65],
+  [0.73, 0.59, 0.70, 0.46, -1.0, 0.65, 0.42, 0.60],
+  [0.69, 0.51, 0.62, 0.40, 0.47, -1.0, 0.34, 0.56],
+  [0.85, 0.67, 0.80, 0.58, 0.63, 0.75, -1.0, 0.70],
+  [0.71, 0.57, 0.66, 0.44, 0.52, 0.77, 0.38, -1.0],
+];
 ---
 <Layout
   title="Multivac · Deep Pearl AI"
   description="Multivac is an independent, blind evaluation of frontier language models — fresh questions, cross-family judging, no vendor grading its own homework."
+  chapter="02"
 >
   <section class="page-hero">
     <div class="wrap">
@@ -28,9 +55,74 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </section>
 
+  <section class="section peer-matrix-section">
+    <div class="wrap">
+      <figure class="figure" data-accrete>
+        <div class="matrix">
+          <div class="matrix-corner mono">
+            <span>Answerers &rarr;</span>
+            <span>Judges &darr;</span>
+          </div>
+          <div class="matrix-cols">
+            {MODELS.map((m) => (
+              <div class="axis-cell">
+                <button class="redact chip" type="button" aria-label={`reveal model name (${m.id})`}>
+                  <span class="real">{m.name}</span>
+                  <span class="bar-ink" aria-hidden="true"><span class="code">{m.id}</span></span>
+                  <span class="stamp" aria-hidden="true">UNBLINDED</span>
+                </button>
+              </div>
+            ))}
+          </div>
+          <div class="matrix-rows">
+            {MODELS.map((m) => (
+              <div class="axis-cell">
+                <button class="redact chip" type="button" aria-label={`reveal model name (${m.id})`}>
+                  <span class="real">{m.name}</span>
+                  <span class="bar-ink" aria-hidden="true"><span class="code">{m.id}</span></span>
+                  <span class="stamp" aria-hidden="true">UNBLINDED</span>
+                </button>
+              </div>
+            ))}
+          </div>
+          <div class="plate matrix-plate">
+            <canvas
+              id="peer-matrix-canvas"
+              aria-hidden="true"
+              data-matrix={JSON.stringify(MATRIX)}
+            ></canvas>
+            <span class="plate-label red recused-label">RECUSED</span>
+            <span class="plate-label" style="bottom:10px;left:30px">AGGREGATE VERDICT DENSITY 0&ndash;1</span>
+            <div
+              class="matrix-cells"
+              id="matrix-cells"
+              role="group"
+              aria-label="Peer matrix — aggregate verdicts per judge and answerer pair"
+            >
+              {MATRIX.map((row, r) =>
+                row.map((v, c) => {
+                  const tip =
+                    v < 0
+                      ? `${MODELS[r].id} judging ${MODELS[c].id} — recused`
+                      : `${MODELS[r].id} judging ${MODELS[c].id} — mean ${v.toFixed(2)}`;
+                  return <button class="cellbtn" type="button" data-tip={tip} aria-label={tip}></button>;
+                })
+              )}
+            </div>
+            <div class="matrix-tip mono" id="matrix-tip" role="status" hidden></div>
+          </div>
+        </div>
+        <figcaption class="figcap">
+          <span><span class="fig-no">FIG. 1</span> — THE PEER MATRIX</span>
+          <span class="fig-note">No vendor grades its own homework.</span>
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
   <section class="section">
     <div class="wrap">
-      <div class="prose">
+      <div class="prose" data-accrete>
         <h2>Why independent evaluation</h2>
         <p>
           AI labs optimize for benchmarks, and benchmarks fall to Goodhart's
@@ -50,7 +142,7 @@ import Layout from '../layouts/Layout.astro';
   </section>
 
   <section class="section">
-    <div class="wrap">
+    <div class="wrap" data-accrete>
       <header class="section-header">
         <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Method</p>
         <h2>How an evaluation runs</h2>
@@ -126,7 +218,7 @@ import Layout from '../layouts/Layout.astro';
   </section>
 
   <section class="section">
-    <div class="wrap">
+    <div class="wrap" data-accrete>
       <header class="section-header">
         <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Scope</p>
         <h2>What gets measured</h2>
@@ -148,3 +240,502 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </section>
 </Layout>
+
+<style>
+  /* ---------- FIG. 1 — the peer matrix grid scaffold ---------- */
+  .matrix {
+    display: grid;
+    grid-template-columns: clamp(64px, 9vw, 96px) 1fr;
+    grid-template-rows: auto 1fr;
+    column-gap: 10px;
+    row-gap: 8px;
+  }
+
+  .matrix-corner {
+    grid-area: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-end;
+    gap: 2px;
+    font-size: 9.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--faint);
+    padding-bottom: 5px;
+  }
+
+  /* track sizes match the canvas cell math exactly: 8 equal tracks,
+     1px padding compensates the plate border so labels sit over cells */
+  .matrix-cols {
+    grid-area: 1 / 2;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    padding: 18px 1px 6px;
+  }
+
+  .matrix-rows {
+    grid-area: 2 / 1;
+    display: grid;
+    grid-template-rows: repeat(8, 1fr);
+    padding: 1px 0;
+  }
+
+  .matrix-plate {
+    grid-area: 2 / 2;
+    aspect-ratio: 16 / 9;
+  }
+
+  .axis-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .matrix-rows .axis-cell {
+    justify-content: flex-end;
+    padding-right: 12px;
+  }
+
+  /* ---------- redacted model chips ---------- */
+  .chip {
+    display: inline-block;
+    background: none;
+    border: 0;
+    margin: 0;
+    padding: 1px 3px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    color: var(--text);
+    white-space: nowrap;
+    line-height: 1.5;
+  }
+
+  .chip:hover,
+  .chip:focus-visible {
+    z-index: 6;
+  }
+
+  .chip .bar-ink {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .chip .bar-ink .code {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--bg);
+  }
+
+  /* touch fallback — click toggles the lift that hover/focus provide */
+  .chip.lifted .bar-ink {
+    opacity: 0;
+  }
+
+  .chip.lifted .stamp {
+    opacity: 1;
+  }
+
+  .chip.lifted {
+    z-index: 6;
+  }
+
+  /* ---------- invisible-but-focusable cell inspector ---------- */
+  .matrix-cells {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    z-index: 3;
+  }
+
+  .cellbtn {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    cursor: crosshair;
+  }
+
+  .cellbtn:focus-visible {
+    outline-offset: -3px;
+  }
+
+  .matrix-tip {
+    position: absolute;
+    z-index: 7;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: var(--text);
+    background: rgba(7, 8, 10, 0.92);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 9px;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  /* ---------- RECUSED diagonal stamp (atan(9/16) ≈ 29.4°) ---------- */
+  .recused-label {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(29.4deg);
+    letter-spacing: 0.6em;
+    font-size: 12px;
+    opacity: 0.85;
+  }
+
+  @media (max-width: 720px) {
+    .matrix-plate {
+      aspect-ratio: 1 / 1;
+    }
+
+    .recused-label {
+      transform: translate(-50%, -50%) rotate(45deg);
+      letter-spacing: 0.35em;
+    }
+
+    .matrix {
+      grid-template-columns: 54px 1fr;
+      column-gap: 6px;
+    }
+
+    .matrix-rows .axis-cell {
+      padding-right: 5px;
+    }
+
+    .chip {
+      font-size: 9px;
+      padding: 1px 2px;
+    }
+
+    .chip .bar-ink .code {
+      font-size: 8.5px;
+      letter-spacing: 0.05em;
+    }
+
+    .matrix-corner {
+      font-size: 8.5px;
+    }
+  }
+</style>
+
+<script>
+  import { pearlLUT, lutColor, makeSim, glowSprite } from '../lib/nacre.js';
+
+  function initMultivacPage() {
+    const canvas = document.getElementById('peer-matrix-canvas');
+    if (!canvas || canvas.dataset.init) return;
+    canvas.dataset.init = '1';
+
+    const N = 8;
+    /* baked target heat-map — same JSON literal the markup was built from */
+    const T = JSON.parse(canvas.dataset.matrix);
+    const lut = pearlLUT(undefined, 256, 2.2);
+
+    /* pre-rendered sprites — shadowBlur is banned */
+    const moteSprite = glowSprite([240, 238, 232], 64, 1);
+    const alertSprite = glowSprite([216, 160, 122], 48, 0.9); /* disagreement only */
+    const headSprites = [30, 95, 160, 225].map((i) => glowSprite(lut[i], 48, 0.9));
+
+    /* live state converging toward the baked target */
+    const cur = T.map((row) => row.map(() => 0));
+    const alertT = T.map((row) => row.map((v) => (v >= 0 && v < 0.4 ? (0.4 - v) * 0.8 : 0)));
+    const alertCur = T.map((row) => row.map(() => 0));
+    const flash = T.map((row) => row.map(() => 0));
+
+    let seed = 0x9e3779b9;
+    const rand = () => {
+      seed ^= seed << 13;
+      seed ^= seed >>> 17;
+      seed ^= seed << 5;
+      seed >>>= 0;
+      return seed / 4294967296;
+    };
+    const clamp01 = (v) => Math.max(0, Math.min(1, v));
+    const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+    const qBez = (a, b, c, u) => (1 - u) * (1 - u) * a + 2 * (1 - u) * u * b + u * u * c;
+    const hueFor = (t) => (0.62 + t * 0.55) % 1;
+
+    let simT = 0;
+    let nextRound = 700;
+    let rounds = [];
+    let staticLayer = null;
+
+    /* static geometry (grid lines + recused diagonal) drawn once per resize */
+    function buildStatic(view) {
+      const { W, H, DPR } = view;
+      const cw = W / N;
+      const ch = H / N;
+      staticLayer = document.createElement('canvas');
+      staticLayer.width = Math.max(1, Math.round(W * DPR));
+      staticLayer.height = Math.max(1, Math.round(H * DPR));
+      const g = staticLayer.getContext('2d');
+      g.setTransform(DPR, 0, 0, DPR, 0, 0);
+      g.lineWidth = 1;
+      g.strokeStyle = 'rgba(233,230,223,0.08)';
+      g.beginPath();
+      for (let i = 1; i < N; i++) {
+        g.moveTo(Math.round(i * cw) + 0.5, 0);
+        g.lineTo(Math.round(i * cw) + 0.5, H);
+        g.moveTo(0, Math.round(i * ch) + 0.5);
+        g.lineTo(W, Math.round(i * ch) + 0.5);
+      }
+      g.stroke();
+      /* press-red X — the judge's seat for its own column never fills */
+      g.strokeStyle = 'rgba(194,69,47,0.6)';
+      for (let i = 0; i < N; i++) {
+        const x = i * cw;
+        const y = i * ch;
+        g.strokeRect(x + 2.5, y + 2.5, cw - 5, ch - 5);
+        g.beginPath();
+        g.moveTo(x + 5, y + 5);
+        g.lineTo(x + cw - 5, y + ch - 5);
+        g.moveTo(x + cw - 5, y + 5);
+        g.lineTo(x + 5, y + ch - 5);
+        g.stroke();
+      }
+    }
+
+    function drawCells(ctx, view, agg, alertAgg) {
+      const cw = view.W / N;
+      const ch = view.H / N;
+      for (let r = 0; r < N; r++) {
+        for (let c = 0; c < N; c++) {
+          if (r === c) continue;
+          const a = agg[r][c];
+          if (a > 0.004) {
+            ctx.fillStyle = lutColor(lut, hueFor(T[r][c]), Math.min(0.88, 0.03 + a * 0.78));
+            ctx.fillRect(c * cw + 1, r * ch + 1, cw - 2, ch - 2);
+          }
+          const al = alertAgg[r][c];
+          if (al > 0.005) {
+            ctx.fillStyle = `rgba(216,160,122,${Math.min(0.45, al)})`;
+            ctx.fillRect(c * cw + 1, r * ch + 1, cw - 2, ch - 2);
+          }
+        }
+      }
+    }
+
+    function spawnRound(view) {
+      const col = (rand() * N) | 0;
+      const judges = [];
+      for (let r = 0; r < N; r++) if (r !== col) judges.push(r);
+      for (let i = judges.length - 1; i > 0; i--) {
+        const j = (rand() * (i + 1)) | 0;
+        [judges[i], judges[j]] = [judges[j], judges[i]];
+      }
+      const count = view.degraded ? 5 : 7; /* governor: drop ~30% */
+      const arcs = judges.slice(0, count).map((r, i) => ({
+        r,
+        c: col,
+        start: simT + 320 + i * 55,
+        dur: 360 + rand() * 140,
+        disagree: rand() < (T[r][col] < 0.4 ? 0.3 : 0.07),
+        deposited: false,
+        len: 0,
+      }));
+      const last = arcs[arcs.length - 1];
+      rounds.push({ col, t0: simT, arcs, end: last.start + last.dur + 220 });
+    }
+
+    function deposit(a) {
+      const tv = T[a.r][a.c];
+      const jit = Math.max(0, 1 - simT / 45000); /* settles into target by ~45s */
+      cur[a.r][a.c] = clamp01(cur[a.r][a.c] + (tv - cur[a.r][a.c]) * 0.4 + (rand() - 0.5) * 0.22 * jit);
+      flash[a.r][a.c] = Math.min(1, flash[a.r][a.c] + 0.8);
+      if (a.disagree) {
+        alertCur[a.r][a.c] = Math.min(0.55, alertCur[a.r][a.c] + 0.08 + alertT[a.r][a.c] * 0.45);
+      }
+    }
+
+    function render(ctx, t, dt, view) {
+      simT += dt;
+      const { W, H } = view;
+      const cw = W / N;
+      const ch = H / N;
+
+      ctx.clearRect(0, 0, W, H);
+      if (staticLayer) ctx.drawImage(staticLayer, 0, 0, W, H);
+
+      /* slow relaxation toward the baked matrix */
+      const k = 1 - Math.exp(-dt * 0.000025);
+      for (let r = 0; r < N; r++) {
+        for (let c = 0; c < N; c++) {
+          if (r === c) continue;
+          cur[r][c] += (T[r][c] - cur[r][c]) * k;
+          alertCur[r][c] += (alertT[r][c] - alertCur[r][c]) * k;
+          flash[r][c] = flash[r][c] > 0.02 ? flash[r][c] * Math.exp(-dt / 240) : 0;
+        }
+      }
+
+      drawCells(ctx, view, cur, alertCur);
+
+      /* one evaluation round every ~900ms */
+      if (simT >= nextRound) {
+        if (rounds.length < 3) spawnRound(view);
+        nextRound = simT + 860 + rand() * 180;
+      }
+
+      ctx.globalCompositeOperation = 'lighter';
+
+      /* verdict deposit flashes */
+      for (let r = 0; r < N; r++) {
+        for (let c = 0; c < N; c++) {
+          const f = flash[r][c];
+          if (f <= 0.02) continue;
+          ctx.globalAlpha = f * 0.5;
+          ctx.drawImage(
+            moteSprite,
+            c * cw + cw / 2 - cw * 0.7,
+            r * ch + ch / 2 - ch * 0.7,
+            cw * 1.4,
+            ch * 1.4
+          );
+        }
+      }
+      ctx.globalAlpha = 1;
+
+      for (const R of rounds) {
+        const cx = R.col * cw + cw / 2;
+
+        /* the answerer column under examination */
+        const env = Math.min(1, (simT - R.t0) / 180) * clamp01((R.end - simT) / 300);
+        if (env > 0) {
+          ctx.globalAlpha = 0.06 * env;
+          ctx.fillStyle = 'rgb(240,238,232)';
+          ctx.fillRect(R.col * cw + 1, 0, cw - 2, H);
+          ctx.globalAlpha = 1;
+        }
+
+        /* question mote drops into the column */
+        const dp = (simT - R.t0) / 300;
+        if (dp <= 1) {
+          const my = -18 + (ch * 0.55 + 18) * easeOut(clamp01(dp));
+          ctx.globalAlpha = 0.9;
+          ctx.drawImage(moteSprite, cx - 11, my - 11, 22, 22);
+          ctx.globalAlpha = 1;
+        }
+
+        /* judgment arcs fan from the judges' recused seats into the column */
+        for (const a of R.arcs) {
+          if (simT < a.start) continue;
+          const overEnd = simT - (a.start + a.dur);
+          if (overEnd >= 0 && !a.deposited) {
+            a.deposited = true;
+            deposit(a);
+          }
+          if (overEnd >= 160) continue;
+
+          const p = clamp01((simT - a.start) / a.dur);
+          const u = easeOut(p);
+          const sx = a.r * cw + cw / 2;
+          const sy = a.r * ch + ch / 2;
+          const tx = a.c * cw + cw / 2;
+          const cpx = (sx + tx) / 2;
+          const cpy = sy - ch * 0.95;
+
+          if (!a.len) {
+            let L = 0;
+            let lx = sx;
+            let ly = sy;
+            for (let i = 1; i <= 10; i++) {
+              const uu = i / 10;
+              const x = qBez(sx, cpx, tx, uu);
+              const y = qBez(sy, cpy, sy, uu);
+              L += Math.hypot(x - lx, y - ly);
+              lx = x;
+              ly = y;
+            }
+            a.len = Math.max(8, L);
+          }
+
+          const fade = overEnd > 0 ? 1 - overEnd / 160 : 1;
+          const alpha = 0.7 * fade;
+          ctx.strokeStyle = a.disagree
+            ? `rgba(216,160,122,${alpha})`
+            : lutColor(lut, (0.08 + a.r * 0.118) % 1, alpha);
+          ctx.lineWidth = 1.2;
+          ctx.setLineDash([a.len, a.len]);
+          ctx.lineDashOffset = a.len * (1 - u);
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.quadraticCurveTo(cpx, cpy, tx, sy);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          if (overEnd < 0) {
+            const hx = qBez(sx, cpx, tx, u);
+            const hy = qBez(sy, cpy, sy, u);
+            const spr = a.disagree ? alertSprite : headSprites[a.r % headSprites.length];
+            ctx.drawImage(spr, hx - 8, hy - 8, 16, 16);
+          }
+        }
+      }
+
+      ctx.globalCompositeOperation = 'source-over';
+      rounds = rounds.filter((R) => simT < R.end + 200);
+    }
+
+    /* composed end-state: fully converged mosaic + struck diagonal */
+    function renderStill(ctx, view) {
+      ctx.clearRect(0, 0, view.W, view.H);
+      if (!staticLayer) buildStatic(view);
+      ctx.drawImage(staticLayer, 0, 0, view.W, view.H);
+      drawCells(ctx, view, T, alertT);
+    }
+
+    makeSim(canvas, {
+      init: (view) => buildStatic(view),
+      render,
+      renderStill,
+    });
+
+    /* ---------------- cell inspector tooltip ---------------- */
+    const plate = canvas.closest('.plate');
+    const tip = document.getElementById('matrix-tip');
+    const cellsWrap = document.getElementById('matrix-cells');
+
+    function showTip(btn) {
+      tip.textContent = btn.dataset.tip;
+      tip.hidden = false;
+      const pr = plate.getBoundingClientRect();
+      const br = btn.getBoundingClientRect();
+      const tw = tip.offsetWidth;
+      const th = tip.offsetHeight;
+      let x = br.left - pr.left + br.width / 2 - tw / 2;
+      x = Math.max(6, Math.min(pr.width - tw - 6, x));
+      let y = br.top - pr.top - th - 8;
+      if (y < 4) y = br.bottom - pr.top + 8;
+      tip.style.left = `${x}px`;
+      tip.style.top = `${y}px`;
+    }
+
+    cellsWrap.addEventListener('pointerover', (e) => {
+      const b = e.target.closest('.cellbtn');
+      if (b) showTip(b);
+    });
+    cellsWrap.addEventListener('pointerout', (e) => {
+      if (!e.relatedTarget || !cellsWrap.contains(e.relatedTarget)) tip.hidden = true;
+    });
+    cellsWrap.addEventListener('focusin', (e) => {
+      const b = e.target.closest('.cellbtn');
+      if (b) showTip(b);
+    });
+    cellsWrap.addEventListener('focusout', (e) => {
+      if (!e.relatedTarget || !cellsWrap.contains(e.relatedTarget)) tip.hidden = true;
+    });
+
+    /* redact chips — click toggles the lift for touch users */
+    document.querySelectorAll('.matrix .chip').forEach((b) => {
+      b.addEventListener('click', () => b.classList.toggle('lifted'));
+    });
+  }
+
+  document.addEventListener('astro:page-load', initMultivacPage);
+</script>
