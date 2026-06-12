@@ -4,156 +4,186 @@ import Layout from '../layouts/Layout.astro';
 <Layout>
   <section class="hero">
     <div class="wrap">
-      <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Research lab</p>
-      <h1>Deep Pearl</h1>
-      <p class="lede">A research lab studying AI evaluation, judgment, and edge intelligence.</p>
+      <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Independent research lab</p>
+      <h1>Intelligence, measured.<br /><span class="shimmer">Intelligence, embodied.</span></h1>
+      <p class="lede">
+        Deep Pearl AI studies two sides of the same question: <strong>how do we
+        know an AI system actually works</strong> — and how do we build systems
+        that keep working in the physical world, on real hardware, with real
+        people depending on them.
+      </p>
       <dl class="meta">
         <div>
-          <dt>Focus</dt>
-          <dd>Evaluation independence</dd>
+          <dt>Evaluation</dt>
+          <dd>Multivac &amp; Multivac Physics</dd>
+        </div>
+        <div>
+          <dt>Edge intelligence</dt>
+          <dd>ALEX-1 &amp; EMOTE4D</dd>
         </div>
         <div>
           <dt>Status</dt>
-          <dd>Active research</dd>
-        </div>
-        <div>
-          <dt>Home</dt>
-          <dd>deeppearlai.com</dd>
+          <dd>Active research, live deployments</dd>
         </div>
       </dl>
     </div>
   </section>
 
-  <section id="research" class="section">
+  <section class="section" id="ventures">
+    <div class="wrap">
+      <header class="section-header">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>The work</p>
+        <h2>Four ventures, one thesis</h2>
+        <p class="kicker">
+          Frontier models are judged by benchmarks they can game, then deployed
+          on hardware they were never built for. We work both ends of that gap.
+        </p>
+      </header>
+      <div class="ventures">
+        <article class="venture">
+          <div class="venture-head">
+            <h3>Multivac</h3>
+            <span class="tag tag-review">Paper under review</span>
+          </div>
+          <p class="role">AI model evaluation</p>
+          <p class="desc">
+            Independent, blind evaluation of frontier language models. Fresh
+            questions models haven't memorized, judged by a cross-family peer
+            matrix so no vendor grades its own homework.
+          </p>
+          <ul class="topic-tags" aria-label="Topics">
+            <li>blind peer matrix</li>
+            <li>same-vendor judge bias</li>
+            <li>evaluation independence</li>
+          </ul>
+          <span class="venture-link">Open Multivac <span class="arrow" aria-hidden="true">&rarr;</span></span>
+          <a class="cover" href="/multivac" aria-label="Multivac"></a>
+        </article>
+
+        <article class="venture">
+          <div class="venture-head">
+            <h3>Multivac Physics</h3>
+            <span class="tag tag-live">Live</span>
+          </div>
+          <p class="role">Scientific reasoning evaluation</p>
+          <p class="desc">
+            Graduate-level physics problems run through the same blind peer
+            matrix, measuring whether models reason about the physical world or
+            pattern-match around it.
+          </p>
+          <ul class="topic-tags" aria-label="Topics">
+            <li>physics evaluation</li>
+            <li>cross-family confirmation</li>
+            <li>scientific reasoning</li>
+          </ul>
+          <span class="venture-link">Open Physics <span class="arrow" aria-hidden="true">&rarr;</span></span>
+          <a class="cover" href="/physics" aria-label="Multivac Physics"></a>
+        </article>
+
+        <article class="venture">
+          <div class="venture-head">
+            <h3>ALEX-1</h3>
+            <span class="tag tag-active">Active prototype</span>
+          </div>
+          <p class="role">Adaptive edge assistant</p>
+          <p class="desc">
+            A home assistant that runs on the device, keeps personal data
+            local, and learns from everyday use — voice, emotion, and smart
+            home control without a cloud dependency at its core.
+          </p>
+          <ul class="topic-tags" aria-label="Topics">
+            <li>on-device inference</li>
+            <li>hybrid cloud–edge</li>
+            <li>adaptive learning</li>
+          </ul>
+          <span class="venture-link">Open ALEX-1 <span class="arrow" aria-hidden="true">&rarr;</span></span>
+          <a class="cover" href="/alex-1" aria-label="ALEX-1"></a>
+        </article>
+
+        <article class="venture">
+          <div class="venture-head">
+            <h3>EMOTE4D</h3>
+            <span class="tag tag-pilot">In pilot</span>
+          </div>
+          <p class="role">Fall detection for eldercare</p>
+          <p class="desc">
+            On-device computer vision that detects falls without sending video
+            anywhere. Skeleton-only processing, sanity gates between every
+            pipeline stage, running on Raspberry Pi hardware in a live pilot.
+          </p>
+          <ul class="topic-tags" aria-label="Topics">
+            <li>privacy-preserving vision</li>
+            <li>edge deployment</li>
+            <li>safety-critical ML</li>
+          </ul>
+          <span class="venture-link">Open EMOTE4D <span class="arrow" aria-hidden="true">&rarr;</span></span>
+          <a class="cover" href="/emote4d" aria-label="EMOTE4D"></a>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="principles">
+    <div class="wrap">
+      <header class="section-header">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>How we work</p>
+        <h2>First principles, honestly reported</h2>
+      </header>
+      <div class="principles">
+        <article class="principle">
+          <span class="num">01</span>
+          <h3>No one grades their own homework</h3>
+          <p>
+            Evaluations are blind and judged across model families. A
+            benchmark's design shapes its rankings, so we design against our
+            own bias first.
+          </p>
+        </article>
+        <article class="principle">
+          <span class="num">02</span>
+          <h3>Production hardware is the truth</h3>
+          <p>
+            A number measured in the lab is a hypothesis. Nothing counts until
+            it holds on the device, in the room, under the lighting it will
+            actually face.
+          </p>
+        </article>
+        <article class="principle">
+          <span class="num">03</span>
+          <h3>Trust is engineered, not assumed</h3>
+          <p>
+            Compositional systems fail when one stage trusts another blindly.
+            We put explicit sanity gates between stages and design honest
+            failure modes.
+          </p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="research-preview">
     <div class="wrap">
       <header class="section-header">
         <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Research</p>
-        <h2>Threads</h2>
-        <p class="kicker">Open lines of work at Deep Pearl. Each thread carries its own status and pace.</p>
+        <h2>What we're studying</h2>
+        <p class="kicker">
+          Six threads, from 3D perception to brain-inspired learning to
+          agentic control — each feeding back into the ventures.
+        </p>
       </header>
-      <div class="threads">
-        <article class="thread">
-          <div class="thread-content">
-            <header class="thread-head">
-              <span class="tag tag-review">Under review</span>
-              <h3>Evaluation and judgment</h3>
-            </header>
-            <p>Independent evaluation of language models, and how a benchmark's design shapes its rankings.</p>
-            <ul class="topic-tags" aria-label="Topics">
-              <li>evaluation independence</li>
-              <li>constructor bias</li>
-              <li>same vendor judge bias</li>
-            </ul>
-          </div>
-          <a class="thread-link" href="/multivac">
-            <span>Read progress</span>
-            <span class="arrow" aria-hidden="true">&rarr;</span>
-          </a>
-        </article>
-        <article class="thread">
-          <div class="thread-content">
-            <header class="thread-head">
-              <span class="tag tag-live">Live</span>
-              <h3>Physics evaluation</h3>
-            </header>
-            <p>Graduate level physics problems run through the same blind peer matrix, measured across model families.</p>
-            <ul class="topic-tags" aria-label="Topics">
-              <li>physics evaluation</li>
-              <li>cross family confirmation</li>
-            </ul>
-          </div>
-          <a class="thread-link" href="/physics">
-            <span>Open thread</span>
-            <span class="arrow" aria-hidden="true">&rarr;</span>
-          </a>
-        </article>
-        <article class="thread">
-          <div class="thread-content">
-            <header class="thread-head">
-              <span class="tag tag-active">Active prototype</span>
-              <h3>Adaptive edge intelligence</h3>
-            </header>
-            <p>An assistant that runs on the device, keeps personal data local, and learns from everyday use.</p>
-            <ul class="topic-tags" aria-label="Topics">
-              <li>representation learning</li>
-              <li>interpretability</li>
-              <li>adaptive computation</li>
-              <li>edge deployment</li>
-              <li>robotic integration</li>
-            </ul>
-          </div>
-          <a class="thread-link" href="/edge">
-            <span>Open thread</span>
-            <span class="arrow" aria-hidden="true">&rarr;</span>
-          </a>
-        </article>
-        <article class="thread">
-          <div class="thread-content">
-            <header class="thread-head">
-              <span class="tag tag-pilot">In pilot</span>
-              <h3>Fall detection at the edge</h3>
-            </header>
-            <p>On device computer vision that detects falls in eldercare without sending video away.</p>
-            <ul class="topic-tags" aria-label="Topics">
-              <li>representation learning</li>
-              <li>adaptive computation</li>
-              <li>edge deployment</li>
-            </ul>
-          </div>
-          <a class="thread-link" href="/emote4d">
-            <span>Open thread</span>
-            <span class="arrow" aria-hidden="true">&rarr;</span>
-          </a>
-        </article>
-      </div>
-
-      <div class="studying">
-        <p class="label">Open questions Deep Pearl is reading into</p>
-        <ul class="studying-list">
+      <div class="now-band">
+        <p class="label">Currently learning</p>
+        <ul class="pill-list">
           <li>representation learning</li>
           <li>interpretability</li>
           <li>adaptive computation</li>
           <li>edge deployment</li>
           <li>robotic integration</li>
+          <li>perception and 3D</li>
         </ul>
       </div>
-
-      <aside class="influences">
-        <p class="label">Influences</p>
-        <p>World model and edge AI research by the author of <a href="https://github.com/yuedajiong" rel="noopener">github.com/yuedajiong</a>.</p>
-      </aside>
-    </div>
-  </section>
-
-  <section id="papers" class="section">
-    <div class="wrap">
-      <header class="section-header">
-        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Papers</p>
-        <h2>Working list</h2>
-      </header>
-      <ul class="papers">
-        <li>
-          <div class="paper-row">
-            <h3>Multivac evaluation methodology</h3>
-            <span class="tag tag-review">Under review</span>
-          </div>
-        </li>
-      </ul>
-    </div>
-  </section>
-
-  <section id="demos" class="section">
-    <div class="wrap">
-      <header class="section-header">
-        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Demos</p>
-        <h2>Interactive research</h2>
-        <p class="kicker">Demos for active threads. Entries to follow.</p>
-      </header>
-      <div class="demo-grid" aria-hidden="true">
-        <div class="demo-card"></div>
-        <div class="demo-card"></div>
-        <div class="demo-card"></div>
-        <div class="demo-card"></div>
+      <div class="hero-links">
+        <a class="btn btn-primary" href="/research">Explore the research agenda</a>
       </div>
     </div>
   </section>

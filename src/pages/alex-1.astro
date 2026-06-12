@@ -2,32 +2,145 @@
 import Layout from '../layouts/Layout.astro';
 ---
 <Layout
-  title="ALEX-1 · Deep Pearl"
-  description="An assistant that runs on the device, keeps personal data local, and learns from everyday use."
+  title="ALEX-1 · Deep Pearl AI"
+  description="ALEX-1 is an adaptive home assistant that runs on the device, keeps personal data local, and learns from everyday use."
 >
-  <article class="thread-page wrap">
-    <a class="back" href="/">
-      <span aria-hidden="true">&larr;</span>
-      <span>Deep Pearl</span>
-    </a>
-
-    <div class="meta-row">
-      <span class="tag tag-active">Active prototype</span>
+  <section class="page-hero">
+    <div class="wrap">
+      <a class="back" href="/">
+        <span aria-hidden="true">&larr;</span>
+        <span>Deep Pearl AI</span>
+      </a>
+      <div class="meta-row">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Edge intelligence</p>
+        <span class="tag tag-active">Active prototype</span>
+      </div>
+      <h1>ALEX-1</h1>
+      <p class="lede">
+        An adaptive home assistant that runs on the device, keeps personal
+        data local, and learns from everyday use — voice, emotion, and smart
+        home control without a cloud dependency at its core.
+      </p>
     </div>
-    <h1>ALEX-1</h1>
-    <p class="lede">An assistant that runs on the device, keeps personal data local, and learns from everyday use.</p>
+  </section>
 
-    <div class="research-groups">
-      <section class="research-group" aria-labelledby="g-alex">
-        <h2 id="g-alex">Research topics</h2>
-        <ul class="studying-list">
+  <section class="section">
+    <div class="wrap">
+      <div class="prose">
+        <h2>The idea</h2>
+        <p>
+          Today's assistants are thin clients for someone else's cloud. Your
+          voice, your routines, and your home's behavior leave the building so
+          a data center can decide whether to turn on a lamp. ALEX-1 inverts
+          that: <strong>the intelligence lives where the data lives.</strong>
+          Speech recognition, emotion understanding, and device control run
+          locally; the cloud is an optional accelerator, never a requirement.
+        </p>
+        <p>
+          The harder, more interesting half is adaptation. An assistant should
+          get better the longer it lives with you — learning preferences,
+          remembering context, and anticipating routines — without that
+          learning ever becoming someone else's training data.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <header class="section-header">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Architecture</p>
+        <h2>Mind and body, cloud and edge</h2>
+      </header>
+      <dl class="facts">
+        <div class="fact">
+          <dt>The body</dt>
+          <dd>The smart home product: voice pipeline, Home Assistant integration, Zigbee device control, and on-device models targeting Raspberry Pi-class hardware.</dd>
+        </div>
+        <div class="fact">
+          <dt>The mind</dt>
+          <dd>The conversational intelligence layer — memory, semantic recall, and decision-making — already live as a working agent that helps develop its own codebase.</dd>
+        </div>
+        <div class="fact">
+          <dt>The bridge</dt>
+          <dd>A hybrid cloud–edge architecture: heavy development and large models in the cloud, with a pull-based deployment path down to the edge hub.</dd>
+        </div>
+      </dl>
+
+      <ol class="steps">
+        <li>
+          <div>
+            <h3>Develop in the cloud, deploy to the edge</h3>
+            <p>
+              Development runs on a full-strength cloud environment — language
+              models, voice pipeline, message bus, and Home Assistant under one
+              roof — so the edge target receives proven configurations instead
+              of experiments.
+            </p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h3>Local-first by design</h3>
+            <p>
+              The production hub handles wake word, speech-to-text,
+              text-to-speech, and routine commands entirely on device. Personal
+              audio and home telemetry stay on the local network.
+            </p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h3>Learn from real interactions</h3>
+            <p>
+              The adaptive loop started before the hardware shipped: ALEX-1
+              already operates as a conversational agent with persistent
+              memory, and every interaction sharpens the intelligence layer the
+              product will inherit.
+            </p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h3>Human-in-the-loop where it counts</h3>
+            <p>
+              The agent proposes; a human approves. Code changes, device
+              automations, and anything irreversible require explicit sign-off
+              — autonomy is earned capability by capability.
+            </p>
+          </div>
+        </li>
+      </ol>
+
+      <div class="callout">
+        <p>
+          <strong>Lessons flow in from EMOTE4D.</strong> Hardware reliability,
+          edge deployment discipline, and honest failure modes were learned the
+          hard way on safety-critical fall detection — ALEX-1 inherits that
+          playbook from day one.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <header class="section-header">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Research threads</p>
+        <h2>What ALEX-1 exercises</h2>
+      </header>
+      <div class="now-band">
+        <p class="label">Topics in play</p>
+        <ul class="pill-list">
           <li>representation learning</li>
           <li>interpretability</li>
           <li>adaptive computation</li>
           <li>edge deployment</li>
           <li>robotic integration</li>
+          <li>emotion recognition</li>
+          <li>voice personalization</li>
         </ul>
-      </section>
+      </div>
     </div>
-  </article>
+  </section>
 </Layout>

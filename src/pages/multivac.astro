@@ -2,67 +2,149 @@
 import Layout from '../layouts/Layout.astro';
 ---
 <Layout
-  title="Multivac progress · Deep Pearl"
-  description="Live progress for Multivac while the research paper is under review."
+  title="Multivac · Deep Pearl AI"
+  description="Multivac is an independent, blind evaluation of frontier language models — fresh questions, cross-family judging, no vendor grading its own homework."
 >
-  <article class="multivac wrap">
-    <a class="back" href="/">
-      <span aria-hidden="true">&larr;</span>
-      <span>Deep Pearl</span>
-    </a>
-
-    <div class="meta-row">
-      <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Multivac</p>
-      <span class="tag tag-review">Under review</span>
+  <section class="page-hero">
+    <div class="wrap">
+      <a class="back" href="/">
+        <span aria-hidden="true">&larr;</span>
+        <span>Deep Pearl AI</span>
+      </a>
+      <div class="meta-row">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Evaluation</p>
+        <span class="tag tag-review">Paper under review</span>
+      </div>
+      <h1>Multivac</h1>
+      <p class="lede">
+        Independent evaluation of frontier language models. Fresh questions
+        models haven't memorized, answered blind, and judged by a cross-family
+        peer matrix — so no vendor ever grades its own homework.
+      </p>
+      <div class="hero-links">
+        <a class="btn btn-primary" href="https://themultivac.com" rel="noopener">themultivac.com</a>
+        <a class="btn" href="https://app.themultivac.com" rel="noopener">Open the platform</a>
+      </div>
     </div>
-    <h1>Multivac progress</h1>
-    <p class="lede">The staging home for Multivac while the research paper is under review.</p>
+  </section>
 
-    <div class="banner" role="status" aria-live="polite">
-      <span class="banner-tag">Live progress</span>
-      <p>Moves to themultivac.com once the research paper clears review.</p>
+  <section class="section">
+    <div class="wrap">
+      <div class="prose">
+        <h2>Why independent evaluation</h2>
+        <p>
+          AI labs optimize for benchmarks, and benchmarks fall to Goodhart's
+          law: the metric becomes the target instead of the capability. Public
+          leaderboards are saturated, training sets quietly absorb test sets,
+          and the most common judge of a model's output is another model from
+          the same vendor.
+        </p>
+        <p>
+          Multivac exists to break that loop. The name comes from Asimov's
+          question-answering machine — but the point of the story was never the
+          answers. <strong>The questions we persistently ask shape what AI
+          becomes good at.</strong> Multivac is the question machine.
+        </p>
+      </div>
     </div>
+  </section>
 
-    <section class="stub" id="changelog" aria-labelledby="changelog-h">
-      <header class="stub-head">
-        <h2 id="changelog-h">Changelog</h2>
-        <p class="stub-note">No entries yet</p>
+  <section class="section">
+    <div class="wrap">
+      <header class="section-header">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Method</p>
+        <h2>How an evaluation runs</h2>
       </header>
-      <ol class="log" data-stub aria-hidden="true">
-        <li class="log-row">
-          <span class="col date"></span>
-          <span class="col line"></span>
+      <ol class="steps">
+        <li>
+          <div>
+            <h3>Fresh questions, designed against memorization</h3>
+            <p>
+              Every question is new — it cannot exist in training data. Questions
+              are scored before they run: do models actually diverge on it, can
+              quality be judged objectively, does answering well require genuine
+              capability rather than recall?
+            </p>
+          </div>
         </li>
-        <li class="log-row">
-          <span class="col date"></span>
-          <span class="col line"></span>
+        <li>
+          <div>
+            <h3>Blind answers</h3>
+            <p>
+              Model identities are stripped before judging. No reputation
+              effects, no brand halo — outputs are compared as anonymous
+              candidates.
+            </p>
+          </div>
         </li>
-        <li class="log-row">
-          <span class="col date"></span>
-          <span class="col line"></span>
+        <li>
+          <div>
+            <h3>Cross-family peer matrix</h3>
+            <p>
+              Judging is distributed across model families so that same-vendor
+              judge bias — a model family systematically preferring its own
+              style — is measured and corrected for, not silently absorbed into
+              the rankings.
+            </p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h3>Probe the failure modes that matter</h3>
+            <p>
+              Beyond capability: does the model admit uncertainty, resist
+              sycophancy, stay consistent across phrasings, and fail
+              informatively? These are trustworthiness measurements, not just
+              intelligence measurements.
+            </p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h3>Publish methodology with results</h3>
+            <p>
+              Every evaluation documents its question, rubric, models tested,
+              and surprises — reproducible enough that the ranking can be
+              challenged on its merits.
+            </p>
+          </div>
         </li>
       </ol>
-    </section>
 
-    <section class="stub" id="metrics" aria-labelledby="metrics-h">
-      <header class="stub-head">
-        <h2 id="metrics-h">Metrics</h2>
-        <p class="stub-note">No metrics published yet</p>
-      </header>
-      <div class="metric-grid" data-stub aria-hidden="true">
-        <div class="metric">
-          <div class="bar-row"><span class="short"></span></div>
-          <div class="bar-row"><span class="long"></span><span class="short"></span></div>
-        </div>
-        <div class="metric">
-          <div class="bar-row"><span class="short"></span></div>
-          <div class="bar-row"><span class="long"></span><span class="short"></span></div>
-        </div>
-        <div class="metric">
-          <div class="bar-row"><span class="short"></span></div>
-          <div class="bar-row"><span class="long"></span><span class="short"></span></div>
-        </div>
+      <div class="callout">
+        <p>
+          <strong>Constructor bias is the core finding.</strong> A benchmark's
+          design shapes its rankings: who writes the questions, who judges the
+          answers, and which model family the judge belongs to all move the
+          leaderboard. The research paper formalizing this is currently under
+          review — results and the full methodology land at
+          <a href="https://themultivac.com" rel="noopener">themultivac.com</a>
+          once it clears.
+        </p>
       </div>
-    </section>
-  </article>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <header class="section-header">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Scope</p>
+        <h2>What gets measured</h2>
+      </header>
+      <dl class="facts">
+        <div class="fact">
+          <dt>Capability</dt>
+          <dd>Code, multi-step reasoning, analysis, and communication — compound tasks with verifiable success criteria.</dd>
+        </div>
+        <div class="fact">
+          <dt>Trustworthiness</dt>
+          <dd>Calibration, honest uncertainty, sycophancy resistance, self-correction, and consistency under rephrasing.</dd>
+        </div>
+        <div class="fact">
+          <dt>Limits</dt>
+          <dd>Difficulty escalation and constraint stacking until models break — finding the ceiling, not just the average.</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
 </Layout>

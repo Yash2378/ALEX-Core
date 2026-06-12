@@ -1,13 +1,22 @@
 ---
 import '../styles/global.css';
 const {
-  title = 'Deep Pearl',
-  description = 'Deep Pearl is a research lab studying AI evaluation, judgment, and edge intelligence.',
+  title = 'Deep Pearl AI',
+  description = 'Deep Pearl AI is an independent research lab studying AI evaluation, edge intelligence, and machines that understand the physical world.',
   ogType = 'website',
 } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site).toString();
 const ogImage = new URL('/og.png', Astro.site).toString();
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+
+const nav = [
+  { href: '/research', label: 'Research' },
+  { href: '/multivac', label: 'Multivac' },
+  { href: '/physics', label: 'Physics' },
+  { href: '/alex-1', label: 'ALEX-1' },
+  { href: '/emote4d', label: 'EMOTE4D' },
+];
 ---
 <!doctype html>
 <html lang="en">
@@ -15,13 +24,13 @@ const ogImage = new URL('/og.png', Astro.site).toString();
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#0a0a0b" />
+    <meta name="theme-color" content="#07080a" />
     <meta name="color-scheme" content="dark" />
 
     <link rel="canonical" href={canonical} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
-    <meta property="og:site_name" content="Deep Pearl" />
+    <meta property="og:site_name" content="Deep Pearl AI" />
     <meta property="og:type" content={ogType} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
@@ -29,13 +38,13 @@ const ogImage = new URL('/og.png', Astro.site).toString();
     <meta property="og:image" content={ogImage} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Deep Pearl" />
+    <meta property="og:image:alt" content="Deep Pearl AI" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
-    <meta name="twitter:image:alt" content="Deep Pearl" />
+    <meta name="twitter:image:alt" content="Deep Pearl AI" />
 
     <title>{title}</title>
   </head>
@@ -43,17 +52,17 @@ const ogImage = new URL('/og.png', Astro.site).toString();
     <a class="skip-link" href="#main">Skip to content</a>
     <header class="site-header">
       <div class="wrap">
-        <a href="/" class="wordmark" aria-label="Deep Pearl home">
-          <span class="dot" aria-hidden="true"></span>
-          <span>Deep Pearl</span>
+        <a href="/" class="wordmark" aria-label="Deep Pearl AI home">
+          <span class="pearl" aria-hidden="true"></span>
+          <span>Deep Pearl AI</span>
         </a>
         <nav class="site-nav" aria-label="Primary">
-          <a href="/research">Research</a>
-          <a href="/multivac">Multivac</a>
-          <a href="/physics">Physics</a>
-          <a href="/alex-1">ALEX-1</a>
-          <a href="/emote4d">EMOTE4D</a>
-          <a href="/#demos">Demos</a>
+          {nav.map((item) => (
+            <a
+              href={item.href}
+              aria-current={path === item.href ? 'page' : undefined}
+            >{item.label}</a>
+          ))}
         </nav>
       </div>
     </header>
@@ -62,8 +71,43 @@ const ogImage = new URL('/og.png', Astro.site).toString();
     </main>
     <footer class="site-footer">
       <div class="wrap">
-        <span>Deep Pearl. Independent research.</span>
-        <span>deeppearlai.com</span>
+        <div class="footer-grid">
+          <div class="footer-brand">
+            <a href="/" class="wordmark" aria-label="Deep Pearl AI home">
+              <span class="pearl" aria-hidden="true"></span>
+              <span>Deep Pearl AI</span>
+            </a>
+            <p>
+              An independent research lab. Evaluation you can trust, intelligence
+              that lives at the edge, and machines that understand the physical
+              world.
+            </p>
+          </div>
+          <div class="footer-col">
+            <h4>Lab</h4>
+            <ul>
+              <li><a href="/research">Research</a></li>
+              <li><a href="/multivac">Multivac</a></li>
+              <li><a href="/physics">Multivac Physics</a></li>
+              <li><a href="/alex-1">ALEX-1</a></li>
+              <li><a href="/emote4d">EMOTE4D</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h4>Elsewhere</h4>
+            <ul>
+              <li><a href="https://themultivac.com" rel="noopener">themultivac.com</a></li>
+              <li><a href="https://app.themultivac.com" rel="noopener">app.themultivac.com</a></li>
+              <li><a href="https://multivacphysics.com" rel="noopener">multivacphysics.com</a></li>
+              <li><a href="https://emote4d.com" rel="noopener">emote4d.com</a></li>
+              <li><a href="https://github.com/Yash2378" rel="noopener">github.com/Yash2378</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer-base">
+          <span>Deep Pearl AI. Independent research.</span>
+          <span>deeppearlai.com</span>
+        </div>
       </div>
     </footer>
   </body>

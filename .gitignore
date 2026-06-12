@@ -24,3 +24,6 @@ pnpm-debug.log*
 
 # local screenshot/og render scratchpad
 .screenshots/
+
+# local claude tooling
+.claude/

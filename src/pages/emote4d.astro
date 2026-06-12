@@ -2,30 +2,160 @@
 import Layout from '../layouts/Layout.astro';
 ---
 <Layout
-  title="EMOTE4D · Deep Pearl"
-  description="On device computer vision that detects falls in eldercare without sending video away."
+  title="EMOTE4D · Deep Pearl AI"
+  description="EMOTE4D is on-device computer vision that detects falls in eldercare without sending video away — skeleton-only processing on Raspberry Pi hardware, in live pilot."
 >
-  <article class="thread-page wrap">
-    <a class="back" href="/">
-      <span aria-hidden="true">&larr;</span>
-      <span>Deep Pearl</span>
-    </a>
-
-    <div class="meta-row">
-      <span class="tag tag-pilot">In pilot</span>
+  <section class="page-hero">
+    <div class="wrap">
+      <a class="back" href="/">
+        <span aria-hidden="true">&larr;</span>
+        <span>Deep Pearl AI</span>
+      </a>
+      <div class="meta-row">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Edge intelligence</p>
+        <span class="tag tag-pilot">In pilot</span>
+      </div>
+      <h1>EMOTE4D</h1>
+      <p class="lede">
+        On-device computer vision that detects falls in eldercare — without
+        sending video anywhere. Skeleton-only processing on Raspberry Pi
+        hardware, running in a live pilot.
+      </p>
+      <div class="hero-links">
+        <a class="btn btn-primary" href="https://emote4d.com" rel="noopener">emote4d.com</a>
+      </div>
     </div>
-    <h1>EMOTE4D</h1>
-    <p class="lede">On device computer vision that detects falls in eldercare without sending video away.</p>
+  </section>
 
-    <div class="research-groups">
-      <section class="research-group" aria-labelledby="g-emote">
-        <h2 id="g-emote">Research topics</h2>
-        <ul class="studying-list">
+  <section class="section">
+    <div class="wrap">
+      <div class="prose">
+        <h2>The problem</h2>
+        <p>
+          Falls are the leading cause of fatal injury for adults over 65, and
+          the dominant solutions fail for one human reason: pendants and
+          wearables only work if they're worn. Camera systems remove the
+          compliance problem but create a worse one — nobody wants streaming
+          video of their bedroom leaving the house.
+        </p>
+        <p>
+          EMOTE4D resolves both. <strong>The camera's pixels never leave the
+          device.</strong> Video is reduced to a skeleton — pose landmarks, not
+          images — on the device itself, and every downstream decision runs on
+          that skeleton. What leaves the home is an alert, not a recording.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <header class="section-header">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Architecture</p>
+        <h2>A pipeline that doesn't trust itself</h2>
+      </header>
+      <ol class="steps">
+        <li>
+          <div>
+            <h3>Pose, on the device</h3>
+            <p>
+              A commodity camera feeds an on-device pose estimator. From that
+              point forward the system reasons about biomechanics — joint
+              positions, velocities, torso angle, ground proximity — never raw
+              pixels.
+            </p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h3>Sanity gates between every stage</h3>
+            <p>
+              Compositional vision systems fail when one stage blindly trusts
+              another. EMOTE4D puts explicit gates at each boundary: is this
+              frame usable, is this skeleton real or hallucinated, are these
+              landmarks observed or extrapolated? Phantom poses are killed
+              upstream, before they can look like falls downstream.
+            </p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h3>Two-stage fall confirmation</h3>
+            <p>
+              A fast first stage flags candidate falls from biomechanical
+              features grounded in the physics of falling. A stricter second
+              stage verifies geometry and stillness before anything is allowed
+              to alert — recall first, then precision.
+            </p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h3>Honest failure modes</h3>
+            <p>
+              When the system cannot see — darkness, occlusion, a covered
+              sensor — it says so rather than guessing. A monitoring system
+              that fails silently is worse than none; families are told when
+              coverage pauses.
+            </p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h3>Hardened on production hardware</h3>
+            <p>
+              Every operating number is measured on the deployed device —
+              Raspberry Pi 5 with an infrared-capable camera — in real rooms
+              with real lighting, through multi-day continuous runs. Lab
+              results are treated as hypotheses, not claims.
+            </p>
+          </div>
+        </li>
+      </ol>
+
+      <div class="callout">
+        <p>
+          <strong>Where it stands.</strong> EMOTE4D is in a live overnight
+          pilot deployment, iterating on the gate architecture through
+          continuous multi-day runs and preparing for in-home family pilots in
+          Manitoba. The engineering record — forty-plus architecture decision
+          records — documents every failure mode found and fix shipped.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <header class="section-header">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Design commitments</p>
+        <h2>What the system promises</h2>
+      </header>
+      <dl class="facts">
+        <div class="fact">
+          <dt>Privacy</dt>
+          <dd>Skeleton-only processing on the device. No video storage, no video transmission, ever.</dd>
+        </div>
+        <div class="fact">
+          <dt>Physics first</dt>
+          <dd>Detection grounded in the biomechanics of falling — features that transfer across cameras, rooms, and skeleton formats.</dd>
+        </div>
+        <div class="fact">
+          <dt>Affordable</dt>
+          <dd>Commodity edge hardware, not proprietary sensors — built to be deployable in ordinary homes.</dd>
+        </div>
+      </dl>
+
+      <div class="now-band">
+        <p class="label">Research threads in play</p>
+        <ul class="pill-list">
           <li>representation learning</li>
           <li>adaptive computation</li>
           <li>edge deployment</li>
+          <li>privacy-preserving vision</li>
+          <li>safety-critical ML</li>
         </ul>
-      </section>
+      </div>
     </div>
-  </article>
+  </section>
 </Layout>
