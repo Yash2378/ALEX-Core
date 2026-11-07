@@ -1,0 +1,2358 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { REPO, REPO_PUBLIC } from '../lib/repo.js';
+
+const BLOB = `${REPO}/blob/main`;
+
+/* "Read the source": linked while the repository is public, named by path while it is private */
+const SOURCES = [
+  { path: 'docs/PREREGISTRATION.md', href: `${BLOB}/docs/PREREGISTRATION.md`, note: 'frozen v1, 2026-10-23, tag prereg-v1' },
+  { path: 'docs/DECISIONS.md', href: `${BLOB}/docs/DECISIONS.md`, note: 'decisions log' },
+  { path: 'docs/proposal-v2.md', href: `${BLOB}/docs/proposal-v2.md`, note: 'original proposal, history only' },
+  { path: 'configs/models.yaml', href: `${BLOB}/configs/models.yaml`, note: 'panel, generators, profiles, strata' },
+  { path: 'partialcredit/prompts.py', href: `${BLOB}/partialcredit/prompts.py`, note: 'the judge prompt' },
+  { path: 'data/analysis/pilot/', href: `${REPO}/tree/main/data/analysis/pilot`, note: 'pilot artifacts: report, sizing, glmer, no-op' },
+];
+
+/* Judge panel in configs/models.yaml order — never ordered by any score. */
+const JUDGES = [
+  { slug: 'openai/gpt-5', note: 'reasoning: low' },
+  { slug: 'anthropic/claude-sonnet-4.5', note: '' },
+  { slug: 'google/gemini-2.5-pro', note: 'reasoning: low' },
+  { slug: 'deepseek/deepseek-chat-v3.1', note: '' },
+  { slug: 'cohere/command-a', note: 'replaced z-ai/glm-4.6, amendment 2' },
+  { slug: 'moonshotai/kimi-k2-0905', note: 'max_tokens 10,000' },
+  { slug: 'google/gemma-3-12b-it', note: 'small · contrast row', small: true },
+  { slug: 'openai/gpt-4o-mini', note: 'small · contrast row', small: true },
+];
+
+const GENERATORS = [
+  { slug: 'meta-llama/llama-3.1-8b-instruct', note: '' },
+  { slug: 'qwen/qwen-2.5-7b-instruct', note: '' },
+  { slug: 'meta-llama/llama-3.2-3b-instruct', note: '' },
+  { slug: 'microsoft/phi-4', note: '' },
+  { slug: 'qwen/qwen3-14b', note: 'replaced qwen/qwen3-8b, amendment 8' },
+  { slug: 'mistralai/mistral-small-3.2-24b-instruct', note: '' },
+  { slug: 'meta-llama/llama-3.3-70b-instruct', note: 'mid-size reserve, only if pair yield is short; unused so far' },
+];
+
+const STRATA = [
+  { name: 'near_tie', range: '(0, 0.05]' },
+  { name: 'small', range: '(0.05, 0.15]' },
+  { name: 'medium', range: '(0.15, 0.35]' },
+  { name: 'large', range: '(0.35, 0.70]' },
+  { name: 'huge', range: '(0.70, 1.0]' },
+];
+
+const AMENDMENTS = [
+  ['2026-10-23', 'GLM-4.6 reasoning settings and token caps; a new "truncated" abstention status.'],
+  ['2026-10-23', 'z-ai/glm-4.6 replaced by cohere/command-a; panel stays at 8 judges.'],
+  ['2026-10-23', 'Planted no-op stratum rule corrected (47 of 124 pilot no-op pairs affected; headline unaffected).'],
+  ['2026-10-23', 'K = 3 for the full run (its sizing figures withdrawn by amendment 9; K = 3 stands).'],
+  ['2026-10-23', 'Exclusion rule 5: tasks whose expected-output payload exceeds 50 MB.'],
+  ['2026-10-23', 'Second MBPP+ seeding pass with amazon/nova-micro-v1.'],
+  ['2026-10-23', 'Nested vs crossed secondary analysis; hi_contains_lo bug fixed.'],
+  ['2026-10-23', 'Pre-full-run code review, eight fixes.'],
+  ['2026-10-26', 'Clustering corrected from (judge, task) to task; sizing redone; task-cluster bootstrap CIs (B = 5000); strata pooled only if the realised near-tie MDE is at or under 10 points.'],
+];
+---
+<Layout
+  title="PartialCredit · Deep Pearl AI"
+  description="PartialCredit asks whether LLM judges rank partially-correct code fixes the way hidden tests do: pairs of partly-right patches, scored by execution, judged blind by a preregistered panel."
+  chapter="02"
+>
+  <section class="page-hero">
+    <div class="wrap">
+      <a class="back" href="/">
+        <span aria-hidden="true">&larr;</span>
+        <span>Deep Pearl AI</span>
+      </a>
+      <div class="meta-row">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Judge audit</p>
+        <span class="tag tag-active pc-status-tag"><span>Pilot&nbsp;complete&nbsp;&middot; <span class="pc-nobr">preregistered 2026-10-23</span></span></span>
+      </div>
+      <h1>PartialCredit</h1>
+      <p class="pc-thesis">Do LLM judges rank partially-correct code fixes the way hidden tests do?</p>
+      <p class="lede">
+        Teams increasingly let one language model grade the code another one
+        wrote, because asking a model is cheaper than running the tests.
+        PartialCredit builds pairs of bug fixes that are both partly right
+        &mdash; each passes some of a hidden test suite, neither passes all of
+        it &mdash; shows them to a panel of LLM judges blind, and measures how
+        often the judge prefers the fix that execution says is worse, and
+        whether that rate climbs as the two fixes get closer in quality.
+      </p>
+      <div class="hero-links">
+        {REPO_PUBLIC ? (
+          <>
+            <a class="btn btn-primary" href={REPO} rel="noopener">GitHub repository</a>
+            <a class="btn" href={`${BLOB}/docs/PREREGISTRATION.md`} rel="noopener">Read the preregistration</a>
+          </>
+        ) : (
+          <span class="tag">Repository not yet public</span>
+        )}
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <figure class="figure" data-accrete>
+        <div class="plate pc-plate" id="pc-plate">
+          <canvas id="pc-canvas" aria-hidden="true"></canvas>
+
+          <span class="plate-label" style="top:14px;left:30px">ONE TRIAL &middot; SCHEMATIC</span>
+          <span class="plate-label pc-lab-inputs" style="top:14px;right:30px">100 CELLS STAND FOR ONE TASK&rsquo;S HIDDEN INPUTS</span>
+
+          <span class="plate-label pc-rowlab" id="pc-lab-a">PATCH A</span>
+          <span class="plate-label pc-rowlab" id="pc-lab-b">PATCH B</span>
+          <span class="plate-label pc-count" id="pc-count-a"><strong>806</strong>&thinsp;/&thinsp;1000</span>
+          <span class="plate-label pc-count" id="pc-count-b"><strong>491</strong>&thinsp;/&thinsp;1000</span>
+          <span class="plate-label pc-gaplab" id="pc-gaplab">GAP 0.315</span>
+          <span class="plate-label pc-rel" id="pc-rellab">NESTED &middot; B&rsquo;S PASSES &sub; A&rsquo;S</span>
+          <span class="plate-label red pc-withheld" id="pc-wh-a" hidden>WITHHELD</span>
+          <span class="plate-label red pc-withheld" id="pc-wh-b" hidden>WITHHELD</span>
+
+          <span class="plate-label pc-striplab" id="pc-striplab">STRATUM</span>
+          <div class="pc-stratum-names" id="pc-stratum-names" aria-hidden="true">
+            {STRATA.map((s) => <span class="plate-label pc-sname" data-stratum={s.name}>{s.name.replace('_', ' ')}</span>)}
+          </div>
+          <div class="pc-stratum-bounds" id="pc-stratum-bounds" aria-hidden="true">
+            {['0', '0.05', '0.15', '0.35', '0.70', '1.0'].map((b) => <span class="plate-label pc-sbound">{b}</span>)}
+          </div>
+
+          <span class="plate-label pc-orderlab" id="pc-orderlab">ORDER &middot; HI_FIRST &middot; PATCH A SHOWN AS CANDIDATE A</span>
+
+          <div class="pc-card" id="pc-card-1" aria-label="What the judge sees">
+            <p class="pc-card-h">What the judge sees</p>
+            <ul class="pc-card-list">
+              <li><span>specification</span><i aria-hidden="true"></i></li>
+              <li><span>buggy program</span><i aria-hidden="true"></i></li>
+              <li><span>candidate A</span><i aria-hidden="true"></i></li>
+              <li><span>candidate B</span><i aria-hidden="true"></i></li>
+            </ul>
+            <p class="pc-card-note">never tests, never pass rates, never model names</p>
+            <p class="pc-card-verdict">VERDICT: <strong id="pc-verdict-1">_</strong></p>
+          </div>
+          <div class="pc-card" id="pc-card-2" aria-label="What the judge sees, other order" hidden>
+            <p class="pc-card-h">What the judge sees</p>
+            <ul class="pc-card-list">
+              <li><span>specification</span><i aria-hidden="true"></i></li>
+              <li><span>buggy program</span><i aria-hidden="true"></i></li>
+              <li><span>candidate A</span><i aria-hidden="true"></i></li>
+              <li><span>candidate B</span><i aria-hidden="true"></i></li>
+            </ul>
+            <p class="pc-card-note">never tests, never pass rates, never model names</p>
+            <p class="pc-card-verdict">VERDICT: <strong id="pc-verdict-2">_</strong></p>
+          </div>
+          <span class="plate-label pc-cardlab" id="pc-cardlab-1" hidden>HI SHOWN AS A</span>
+          <span class="plate-label pc-cardlab" id="pc-cardlab-2" hidden>HI SHOWN AS B</span>
+
+          <span class="plate-label pc-coinlab" id="pc-coinlab">FAIR COIN &middot; SIMULATED AT THE NULL, 0.50 &middot; NOT A MEASURED RATE</span>
+          <span class="plate-label pc-outcome" id="pc-outcome"></span>
+
+          <span class="plate-label pc-phase" id="pc-phase" style="bottom:14px;left:30px">01 SCORING &middot; EVERY CANDIDATE RUNS ON EVERY HIDDEN INPUT</span>
+        </div>
+
+        <p class="readout pc-readout" id="pc-readout" role="status" aria-live="off">
+          <span class="pc-ro-group">
+            <span>hi passes <strong id="pc-ro-hi">806</strong></span>
+            <span>lo passes <strong id="pc-ro-lo">491</strong></span>
+            <span>gap <strong id="pc-ro-gap">0.315</strong></span>
+            <span>stratum <strong id="pc-ro-stratum">medium</strong></span>
+            <span>order <strong id="pc-ro-order">hi_first</strong></span>
+            <span>relation <strong id="pc-ro-rel">nested</strong></span>
+          </span>
+          <span class="pc-ro-group">
+            <span>null = <strong>0.50</strong></span>
+            <span>verdict <strong id="pc-ro-verdict">_</strong></span>
+            <span>outcome <strong id="pc-ro-outcome">&mdash;</strong></span>
+          </span>
+        </p>
+
+        <div class="plate-controls">
+          <button type="button" class="plate-btn" id="pc-run">Run a trial</button>
+          <label class="plate-slider">
+            <span>Gap</span>
+            <input
+              type="range"
+              id="pc-gap"
+              min="0"
+              max="800"
+              step="5"
+              value="315"
+              aria-label="Pass-rate gap between patch A and patch B, in thousandths. Patch A is fixed at 806 of 1000."
+            />
+            <output id="pc-gap-out" for="pc-gap">0.315</output>
+          </label>
+          <button type="button" class="plate-btn pc-toggle" id="pc-orders" aria-pressed="false">Show both orders</button>
+          <button type="button" class="plate-btn pc-toggle" id="pc-relation" aria-pressed="false">Nested / crossed <span class="pc-val" id="pc-relation-val">nested</span></button>
+          <span class="pc-hint mono" id="pc-hint">A is fixed at 806; the slider moves B</span>
+        </div>
+
+        <figcaption class="figcap">
+          <span><span class="fig-no">FIG. 1</span> — ONE TRIAL, SCHEMATIC</span>
+          <span class="fig-note">Schematic of one trial. The verdict is a coin at the null (0.50), not a measured rate. A HumanEval+ task has ~972 hidden inputs; MBPP+ ~105.</span>
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="prose" data-accrete>
+        <h2>Why this matters</h2>
+        <p>
+          Existing code-judge benchmarks label one patch <em>correct</em> and
+          one <em>incorrect</em> by whether it passes an entire test suite. A
+          patch passing 5 of 6 hidden tests and one passing 2 of 6 are both
+          stamped &ldquo;incorrect&rdquo; and never compared. The binary label
+          throws away exactly the comparison a judge is asked to make in
+          practice.
+        </p>
+        <p>
+          Judges already rank patches and filter training data, so the partial
+          case is the normal case. For the human-inserted bugs PartialCredit
+          starts from, the buggy program&rsquo;s median pass rate on the hidden
+          inputs is 0.11 before any repair &mdash; half of the starting
+          programs already pass more than a tenth of the suite.
+        </p>
+        <p>
+          <strong>PartialCredit measures the gap directly.</strong> Two partly
+          right fixes for the same task, both scored by execution on a hidden
+          suite, shown blind to a judge that must pick one. Picking the fix
+          that passes strictly fewer hidden inputs is an inversion. Every pair
+          is shown in both orders, so a judge with no signal scores exactly
+          0.50 &mdash; and the primary question is whether inversions climb as
+          the two fixes get closer.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap" data-accrete>
+      <header class="section-header">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Method</p>
+        <h2>How one trial runs</h2>
+      </header>
+      <ol class="steps">
+        <li>
+          <div>
+            <h3>A repair task</h3>
+            <p>
+              A buggy program and a hidden suite of inputs it should satisfy.
+              HumanEval+ tasks carry a median of 972 hidden inputs, MBPP+ a
+              median of 105; the suites are EvalPlus&rsquo;s, pre-existing and
+              human-authored. HumanEval+ bugs are HumanEvalPack&rsquo;s
+              human-inserted bugs; MBPP+ bugs are freshly seeded by a model
+              that is neither a generator nor a judge, and reported separately.
+            </p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h3>Two partial patches, scored by execution</h3>
+            <p>
+              Small generator models propose fixes at three temperatures.
+              Every candidate runs on every hidden input, twice; pass rate is
+              passes over inputs. Only candidates with a pass rate strictly
+              between 0 and 1 are paired, equal pass rates are never paired,
+              and pairs are stratified by the gap between the two rates.
+            </p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h3>The judge sees the specification, the buggy program, and A and B</h3>
+            <p>
+              Nothing else: never tests, never test output, never pass rates,
+              never model names. Complete functions rather than diffs, one pair
+              per call, temperature 0, one fixed prompt.
+            </p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h3>VERDICT: A or B</h3>
+            <p>
+              Forced choice with no tie option; the last VERDICT line in the
+              reply wins. Refusals, hedges, truncations and unparseable replies
+              are excluded from the estimate and reported as answer rate.
+            </p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h3>An inversion is picking the lower patch</h3>
+            <p>
+              If the judge selects the candidate that passes strictly fewer
+              hidden inputs, the trial is an inversion. Whether that makes the
+              judge wrong, or the suite weak, is what the manual audit decides.
+            </p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h3>Both orders, null 0.50</h3>
+            <p>
+              Every pair is shown twice, hi first and lo first. A judge with no
+              signal, or one that always picks the same slot, scores exactly
+              0.50. That is the null for every hypothesis on this page.
+            </p>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap" data-accrete>
+      <header class="section-header">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Scope</p>
+        <h2>What gets measured</h2>
+      </header>
+      <dl class="facts">
+        <div class="fact">
+          <dt>H1a</dt>
+          <dd>Pooled inversion rate against 0.50, in the both-functional stratum, across the six frontier/strong judges. Interval from a task-cluster bootstrap; the Wilson interval is kept for comparison only.</dd>
+        </div>
+        <div class="fact">
+          <dt>H1b &middot; primary</dt>
+          <dd>A negative coefficient on gap: a statsmodels logit with task-clustered standard errors, and an R glmer with crossed random effects. Supported only if the 95% CI excludes zero in both.</dd>
+        </div>
+        <div class="fact">
+          <dt>Position lock</dt>
+          <dd>The same slot chosen in both orders, reported per judge alongside position consistency. A lock marginalises to exactly 0.50 and is auditable.</dd>
+        </div>
+        <div class="fact">
+          <dt>Baselines</dt>
+          <dd>Prefer-longer and prefer-shorter heuristics against the same null of 0.50; the length difference between candidates enters the model as a covariate.</dd>
+        </div>
+        <div class="fact">
+          <dt>Design effect</dt>
+          <dd>Clusters are tasks. ICC by task and by pair, task-cluster bootstrap CIs with B = 5000. The realised near-tie MDE decides pooling: strata pool only if it is at or under 10 points.</dd>
+        </div>
+        <div class="fact">
+          <dt>Audit</dt>
+          <dd>About 150 disagreement pairs, both authors labelling blind as judge_error / weak_test / ambiguous, at least 50 pairs double-labelled, Cohen&rsquo;s kappa reported.</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap" data-accrete>
+      <header class="section-header">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Ground truth</p>
+        <h2>Ground truth rules</h2>
+      </header>
+      <ol class="pc-rules">
+        <li>Hidden tests are pre-existing and human-authored (EvalPlus). No LLM writes a grading test.</li>
+        <li>No judge authored any test. Generator/judge family overlap is minimised and reported.</li>
+        <li>Generators never see the hidden suite. Judges never see tests or test output.</li>
+        <li>Each candidate is executed twice; unstable pass sets are dropped and the rate reported.</li>
+        <li>Pass rate is a proxy for correctness. The manual audit is what turns &ldquo;judge disagreed with execution&rdquo; into &ldquo;judge was wrong&rdquo;.</li>
+      </ol>
+      <div class="prose pc-rules-notes">
+        <p>
+          <strong>Validation, 2026-09-30.</strong> The HumanEval+ canonical
+          solution passes 100% of hidden inputs on 163 of 164 tasks, 0 flaky;
+          the MBPP+ canonical solution on 377 of 378, 0 flaky.
+        </p>
+        <p>
+          <strong>Exclusions.</strong> HumanEval/32 (its find_zero has many
+          valid roots, so exact-output comparison is the wrong oracle), tasks
+          with fewer than 20 hidden inputs, candidates whose pass sets are
+          unstable across two executions (rule 4), and, by amendment 5, tasks
+          whose expected-output payload exceeds 50 MB: HumanEval/15,
+          HumanEval/130 and Mbpp/255.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap" data-accrete>
+      <header class="section-header">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Apparatus</p>
+        <h2>The panel and the bank</h2>
+        <p class="kicker">
+          Slugs exactly as <code>configs/models.yaml</code>, in configuration
+          order. Judges are never ordered by any score, and no judge family
+          writes patches.
+        </p>
+      </header>
+      <dl class="facts pc-bank">
+        <div class="fact">
+          <dt>Judge panel &middot; 8 judges</dt>
+          <dd>
+            <ul class="pc-slugs">
+              {JUDGES.map((j) => (
+                <li class:list={{ small: j.small }}>
+                  <code>{j.slug}</code>
+                  {j.note && <span class="pc-note">{j.note}</span>}
+                </li>
+              ))}
+            </ul>
+            <p class="pc-fine">The headline pools the six frontier/strong judges; the two small judges are contrast rows, reported alongside, never pooled in. Each pair &times; judge &times; both orders at temperature 0, max_tokens 6000 (Kimi 10,000); 10% of pairs &times; 3 repeats, 10% &times; 2 extra prompt variants. The preregistration counts the panel as 7 families.</p>
+          </dd>
+        </div>
+        <div class="fact">
+          <dt>Generators &middot; small models (D7)</dt>
+          <dd>
+            <ul class="pc-slugs">
+              {GENERATORS.map((g) => (
+                <li>
+                  <code>{g.slug}</code>
+                  {g.note && <span class="pc-note">{g.note}</span>}
+                </li>
+              ))}
+            </ul>
+            <p class="pc-fine">Decision D7: a 70B generator fixed the bugs perfectly almost every time and produced no usable pairs, so partial patches come from small instruct models at temperatures 0.2, 0.8 and 1.2. No generator family sits on the judge panel (decision D8). The pilot used the first four; the full run uses six.</p>
+          </dd>
+        </div>
+        <div class="fact">
+          <dt>Bug seeders &middot; MBPP+</dt>
+          <dd>
+            <ul class="pc-slugs">
+              <li><code>google/gemma-3-27b-it</code><span class="pc-note">first pass</span></li>
+              <li><code>amazon/nova-micro-v1</code><span class="pc-note">second pass, amendment 6</span></li>
+            </ul>
+            <p class="pc-fine">Neither is a generator nor a judge, so the model that writes a bug never also writes patches for it. 147 MBPP+ tasks enter the full run; 226 are dropped because even a weak model solves them every time. Chosen bugs have a median pass rate of 0.51. Seeding cost $0.17.</p>
+          </dd>
+        </div>
+        <div class="fact">
+          <dt>Datasets &middot; frozen 2026-09-30</dt>
+          <dd>
+            <ul class="pc-slugs">
+              <li><code>HumanEval+ v0.1.10</code><span class="pc-note">164 tasks</span></li>
+              <li><code>MBPP+ v0.2.0</code><span class="pc-note">378 tasks</span></li>
+              <li><code>HumanEvalPack python</code><span class="pc-note">164 buggy programs</span></li>
+            </ul>
+            <p class="pc-fine">SHA-256 hashes in <code>data/datasets/manifest.json</code>. Hidden inputs per task: HumanEval+ median 972 (min 2, max 1000); MBPP+ median 105. Eligible for the full run: 160 HumanEval+ + 147 MBPP+ = 307 tasks.</p>
+          </dd>
+        </div>
+        <div class="fact">
+          <dt>Profiles</dt>
+          <dd>
+            <ul class="pc-slugs">
+              <li><code>smoke</code><span class="pc-note">5 tasks, 2 generators, 1 judge, K = 1</span></li>
+              <li><code>pilot</code><span class="pc-note">all eligible HumanEval+ tasks, 4 generators, 8 judges, K = 1</span></li>
+              <li><code>full</code><span class="pc-note">HumanEval+ and MBPP+, 6 generators, 8 judges, K = 3</span></li>
+            </ul>
+            <p class="pc-fine">K is pairs per stratum per task. Sampling seed 20260922 everywhere. Every stage writes JSONL under <code>data/</code> and resumes; every API call is cached.</p>
+          </dd>
+        </div>
+        <div class="fact">
+          <dt>Gap strata &middot; |rate(A) &minus; rate(B)|</dt>
+          <dd>
+            <ul class="pc-slugs">
+              {STRATA.map((s) => (
+                <li><code>{s.name}</code><span class="pc-note">{s.range}</span></li>
+              ))}
+              <li><code>no-op</code><span class="pc-note">planted; reported separately, never in the headline</span></li>
+            </ul>
+            <p class="pc-fine">H1b lives in the first two strata. A planted no-op pairs the buggy program with a cosmetic edit against a partial candidate whose pass rate is strictly higher than the buggy program&rsquo;s.</p>
+          </dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap" data-accrete>
+      <header class="section-header">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>As of 2026-11-04</p>
+        <h2>Status</h2>
+        <p class="kicker">
+          Repository HEAD <code>be79a73</code> of 2026-10-27; 25 commits since
+          2026-09-22; one tag, <code>prereg-v1</code>. No activity after that
+          commit is shown; status checked 2026-11-04.
+        </p>
+      </header>
+
+      <div class="pc-status">
+        <div class="pc-status-col">
+          <p class="pc-status-h"><span class="pc-mark done" aria-hidden="true"></span>Done</p>
+          <ul class="pc-status-list">
+            <li>Datasets frozen with SHA-256 hashes (2026-09-30).</li>
+            <li>Ground-truth validation on all tasks.</li>
+            <li>Smoke run end to end: 5 tasks, 17 pairs, 34 judgments, $0.38.</li>
+            <li>Generator probes (decision D7): small models only.</li>
+            <li>Preregistration frozen 2026-10-23, tag <code>prereg-v1</code>.</li>
+            <li>Pilot complete: 162 HumanEval+ tasks, 4 generators, 3,888 candidates, 348 pairs from 124 tasks (76% yield), 7,200 judgments, $45.10. Non-answer rate 1.1%.</li>
+            <li>Pilot analysis with task-cluster bootstrap (amendment 9).</li>
+            <li>Full run sized at K = 3 on both datasets.</li>
+            <li>MBPP+ bug seeding complete: 147 tasks enter (decision D10).</li>
+            <li>Nested-vs-crossed secondary analysis added (amendment 7).</li>
+            <li>Pre-full-run code review (amendment 8).</li>
+            <li>Preregistered glmer fit run on the pilot as a sizing-stage check (fit 2026-10-26, committed 2026-10-27).</li>
+            <li>Raw pilot artifacts committed for co-author review.</li>
+          </ul>
+        </div>
+        <div class="pc-status-col">
+          <p class="pc-status-h"><span class="pc-mark todo" aria-hidden="true"></span>Not done</p>
+          <ul class="pc-status-list">
+            <li>T1.8 &mdash; reviewer read of the judge prompt for leaks.</li>
+            <li>T2.4 / T2.6 &mdash; audit codebook (<code>docs/AUDIT_CODEBOOK.md</code> does not exist).</li>
+            <li>T3.4 &mdash; pilot audit (<code>data/audit/</code> is empty).</li>
+            <li>T3.6 &mdash; related-work pass.</li>
+            <li>T4.1 &mdash; freeze <code>configs/models.yaml</code> (tag <code>full-config</code>).</li>
+            <li>T4.2 to T4.5 &mdash; the full run: generate, score, pairs; ~26k judgments, $200&ndash;300 expected, cap $1,000; analysis; audit of ~150 pairs. No full-run artifacts exist.</li>
+            <li>T4.6 to T4.8 &mdash; paper draft, datasheet, arXiv.</li>
+            <li>The plan&rsquo;s full-run window (Oct 20 to Nov 2) has passed with the run not started.</li>
+          </ul>
+        </div>
+      </div>
+
+      <dl class="facts pc-sizing">
+        <div class="fact">
+          <dt>Pilot pairs per stratum &middot; K = 1</dt>
+          <dd>near_tie 68 &middot; small 44 &middot; medium 38 &middot; large 47 &middot; huge 27. Planted no-op 124, of which 77 valid after amendment 3.</dd>
+        </div>
+        <div class="fact">
+          <dt>Design effect &middot; by task</dt>
+          <dd>ICC 0.21; design effect 6.7; effective N 383 of 2,650. Near-tie MDE at K = 1 about 11 points. 22.4 judgments per pair in the full profile.</dd>
+        </div>
+        <div class="fact">
+          <dt>Projected near-tie MDE &middot; K = 3</dt>
+          <dd>About 6 to 8 points, bounds 4 to 11. A projection, not a result: the bounds are the result.</dd>
+        </div>
+      </dl>
+
+      <h3 class="pc-sub">Amendments to the preregistration</h3>
+      <ol class="pc-amend">
+        {AMENDMENTS.map(([date, text]) => (
+          <li><span class="pc-date mono">{date}</span><span>{text}</span></li>
+        ))}
+      </ol>
+
+      <div class="callout pc-stop">
+        <p>
+          <strong>Stop condition.</strong> One pilot. One full run. If
+          inconclusive, published as inconclusive. No third run.
+        </p>
+        <p>
+          <strong>Pilot inversion rates are sizing inputs, not results, and
+          are not shown here.</strong>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap" data-accrete>
+      <header class="section-header">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Preregistered, verbatim</p>
+        <h2>What we will not claim</h2>
+      </header>
+      <div class="callout pc-claims">
+        <p>
+          <strong>Not that judges are broken. Not that any model is best. Not
+          that disagreement with the suite is automatically judge error. Only
+          the measured numbers and what the audit supports.</strong>
+        </p>
+        <p class="pc-claims-h mono">Known threats, stated now</p>
+        <p>
+          Pass rate is a proxy (patch overfitting); the audit bounds it.
+          HumanEvalPack bugs and fixes are public and likely in judge training
+          data; MBPP+ bugs are freshly seeded and serve as the uncontaminated
+          contrast, reported separately. Pairwise forced choice is justified by
+          CodeJudgeBench&rsquo;s tie finding; position consistency is reported
+          so it is auditable. Small-function tasks limit external validity;
+          stated, not hidden.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap" data-accrete>
+      <header class="section-header">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>{REPO_PUBLIC ? 'Links' : 'Source'}</p>
+        <h2>{REPO_PUBLIC ? 'Read the source' : 'The repository'}</h2>
+        {!REPO_PUBLIC && (
+          <p class="kicker">
+            Not yet public. Each file is named by its path from the repository
+            root.
+          </p>
+        )}
+      </header>
+      <ul class="pc-links">
+        <li>
+          {REPO_PUBLIC
+            ? <a href={REPO} rel="noopener">github.com/Yash2378/partial-credit-judge</a>
+            : <code>github.com/Yash2378/partial-credit-judge</code>}
+          <span class="pc-note">repository, MIT</span>
+        </li>
+        {SOURCES.map((f) => (
+          <li>
+            {REPO_PUBLIC ? <a href={f.href} rel="noopener">{f.path}</a> : <code>{f.path}</code>}
+            <span class="pc-note">{f.note}</span>
+          </li>
+        ))}
+      </ul>
+      <p class="pc-upstream">
+        Upstream: EvalPlus (Liu et al., NeurIPS 2023) and HumanEvalPack
+        (Muennighoff et al., ICLR 2024).
+      </p>
+      <p class="pc-authors">Yash Darji, Oyindolapo Komolafe. MIT licensed.</p>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  /* ---------- hero: the thesis as a sub-headline under the h1 ---------- */
+  .pc-thesis {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-variation-settings: "opsz" 48, "SOFT" 30;
+    font-size: clamp(21px, 2.6vw, 28px);
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    max-width: 720px;
+    margin: -4px 0 18px;
+  }
+
+  /* the dated status tag is wider than a phone's column: it may wrap, and only
+     after its middot (the date and the words before it never break) */
+  .pc-status-tag {
+    white-space: normal;
+  }
+
+  .pc-status-tag .pc-nobr {
+    white-space: nowrap;
+  }
+
+  /* phones: two lines, and the pill hugs them rather than the column */
+  @media (max-width: 400px) {
+    .pc-status-tag {
+      line-height: 1.45;
+    }
+
+    .pc-status-tag > span {
+      width: min-content;
+    }
+  }
+
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+    color: var(--text);
+  }
+
+  /* ---------- FIG. 1 — pass vectors ---------- */
+  .pc-plate {
+    aspect-ratio: 16 / 9;
+  }
+
+  .pc-plate .plate-label {
+    white-space: nowrap;
+  }
+
+  .pc-count strong {
+    color: var(--pearl-a);
+    font-weight: 500;
+  }
+
+  /* sits on the bracket's leader line, so it masks the line under itself */
+  .pc-gaplab {
+    color: var(--text);
+    transform: translateX(-50%);
+    background: var(--abyss);
+    padding: 0 6px;
+    line-height: 1.2;
+  }
+
+  .pc-rel,
+  .pc-orderlab,
+  .pc-coinlab,
+  .pc-striplab,
+  .pc-cardlab {
+    color: var(--faint);
+  }
+
+  .pc-sname {
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: var(--faint);
+    transition: color 320ms var(--ease-press);
+  }
+
+  .pc-sname.lit {
+    color: var(--pearl-a);
+  }
+
+  .pc-sbound {
+    transform: translateX(-50%);
+    font-size: 9.5px;
+    letter-spacing: 0.06em;
+    color: var(--faint);
+    opacity: 0.8;
+  }
+
+  .pc-withheld {
+    transform: translate(-50%, -50%) rotate(-3deg);
+    font-size: 12px;
+    letter-spacing: 0.4em;
+    border: 1px solid var(--press-red);
+    padding: 3px 10px 3px 14px;
+    background: rgba(4, 5, 10, 0.55);
+  }
+
+  /* short plates: smaller stamps, and the relation line under row B is dropped
+     (the readout and the toggle still carry it) */
+  .pc-plate.tight .pc-withheld {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    padding: 1px 6px 1px 9px;
+  }
+
+  .pc-plate.tight .pc-rel {
+    display: none;
+  }
+
+  /* compact plates: the judge card covers the withheld rows, whose labels hide under it
+     at once, and come back only after the card has faded out (420ms). The
+     reduced-motion still (.still) never sets .cardup: its card sits under the strip,
+     so the rows keep their labels. */
+  .pc-plate.compact .pc-rowlab,
+  .pc-plate.compact .pc-count,
+  .pc-plate.compact .pc-gaplab {
+    transition: visibility 0s linear 420ms;
+  }
+
+  .pc-plate.compact.cardup .pc-rowlab,
+  .pc-plate.compact.cardup .pc-count,
+  .pc-plate.compact.cardup .pc-gaplab {
+    visibility: hidden;
+    transition-delay: 0s;
+  }
+
+  /* and the per-card order labels leave with the cards (the still's cards stay) */
+  .pc-plate.compact:not(.cardup):not(.still) .pc-cardlab {
+    visibility: hidden;
+  }
+
+  .pc-outcome {
+    color: var(--muted);
+    transform: translateX(-50%);
+    text-align: center;
+    white-space: normal !important;
+    line-height: 1.5;
+  }
+
+  .pc-outcome.inv {
+    color: var(--alert);
+  }
+
+  .pc-outcome.ok {
+    color: var(--pearl-b);
+  }
+
+  /* compact plates: the outcome reads to the right of the coin, not under it */
+  .pc-outcome.left {
+    transform: none;
+    text-align: left;
+  }
+
+  /* the judge card: only what the judge sees, never a model name */
+  .pc-card {
+    position: absolute;
+    z-index: 2;
+    box-sizing: border-box;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: rgba(7, 8, 10, 0.88);
+    padding: 12px 14px 10px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 420ms var(--ease-press), transform 420ms var(--ease-press);
+  }
+
+  .pc-card.up {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .pc-card p {
+    margin: 0;
+  }
+
+  .pc-card-h {
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin-bottom: 8px !important;
+  }
+
+  .pc-card-list {
+    list-style: none;
+    margin: 0 0 8px;
+    padding: 0;
+  }
+
+  .pc-card-list li {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 2px 0;
+    color: var(--text);
+  }
+
+  .pc-card-list li i {
+    flex: 1;
+    border-bottom: 1px dashed rgba(233, 230, 223, 0.18);
+    transform: translateY(-3px);
+  }
+
+  .pc-card-note {
+    font-size: 10px;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+    margin-bottom: 8px !important;
+  }
+
+  .pc-card-verdict {
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--text);
+    border-top: 1px solid var(--border-soft);
+    padding-top: 8px;
+  }
+
+  .pc-card-verdict strong {
+    color: var(--pearl-a);
+    font-weight: 500;
+    display: inline-block;
+    min-width: 1.2em;
+  }
+
+  /* shorter plates (16/9 at tablet widths) and compact plates get a denser card */
+  .pc-card.tight,
+  .pc-card.micro {
+    background: rgba(7, 8, 10, 0.96);
+  }
+
+  .pc-card.tight {
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    padding: 9px 11px 8px;
+  }
+
+  .pc-card.tight .pc-card-h,
+  .pc-card.tight .pc-card-note {
+    font-size: 9px;
+    margin-bottom: 5px !important;
+  }
+
+  .pc-card.tight .pc-card-list {
+    margin-bottom: 5px;
+  }
+
+  .pc-card.tight .pc-card-list li {
+    padding: 1px 0;
+  }
+
+  .pc-card.tight .pc-card-verdict {
+    padding-top: 5px;
+  }
+
+  /* compact plates: untracked, the blindness sentence stays on one line on
+     360px phones, so the card does not grow */
+  .pc-plate.compact .pc-card.tight .pc-card-note {
+    letter-spacing: 0;
+  }
+
+  /* two cards side by side on a compact plate */
+  .pc-card.micro {
+    font-size: 9px;
+    letter-spacing: 0.03em;
+    padding: 7px 8px 6px;
+  }
+
+  .pc-card.micro .pc-card-h,
+  .pc-card.micro .pc-card-note {
+    font-size: 8px;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px !important;
+  }
+
+  .pc-card.micro .pc-card-list {
+    margin-bottom: 4px;
+  }
+
+  .pc-card.micro .pc-card-list li {
+    padding: 0;
+    gap: 6px;
+  }
+
+  .pc-card.micro .pc-card-verdict {
+    padding-top: 4px;
+  }
+
+  .pc-readout {
+    margin-top: 14px;
+    gap: 8px 14px;
+  }
+
+  /* Fixed-width fields: each value keeps the width of its longest state (1ch
+     plus the readout's 0.1em tracking per character), so the readout wraps at
+     the same place in every phase of a trial and at every slider and toggle
+     setting, and the controls under it never move. */
+  .pc-readout strong {
+    display: inline-block;
+    min-width: calc(var(--chars, 0) * (1ch + 0.1em));
+  }
+
+  #pc-ro-hi,
+  #pc-ro-lo {
+    --chars: 3; /* 806 */
+  }
+
+  #pc-ro-gap {
+    --chars: 5; /* 0.315 */
+  }
+
+  #pc-ro-stratum,
+  #pc-ro-order {
+    --chars: 8; /* near_tie, hi_first */
+  }
+
+  #pc-ro-rel {
+    --chars: 7; /* crossed */
+  }
+
+  #pc-ro-verdict {
+    --chars: 5; /* A · B */
+  }
+
+  #pc-ro-outcome {
+    --chars: 21; /* inversion · inversion */
+  }
+
+  /* one strip of fields under the breakpoint; above it the trial's setup
+     reads on the first line and its result on the second */
+  .pc-ro-group {
+    display: contents;
+  }
+
+  @media (min-width: 881px) {
+    .pc-readout {
+      flex-direction: column;
+    }
+
+    .pc-ro-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: inherit;
+    }
+
+    /* the result line holds its longest state with room to spare up here, so
+       the verdict and outcome need no reserved width and read without gaps */
+    #pc-ro-verdict,
+    #pc-ro-outcome {
+      --chars: 0;
+    }
+  }
+
+  .pc-toggle[aria-pressed="true"] {
+    color: var(--pearl-a);
+    border-color: rgba(174, 191, 214, 0.5);
+  }
+
+  .pc-val {
+    margin-left: 8px;
+    color: var(--pearl-a);
+  }
+
+  .pc-hint {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--faint);
+  }
+
+  @media (max-width: 720px) {
+    .pc-plate {
+      aspect-ratio: 1 / 1;
+    }
+
+    .pc-lab-inputs,
+    .pc-sbound,
+    .pc-rel {
+      display: none;
+    }
+
+    .pc-plate .plate-label {
+      font-size: 9.5px;
+      letter-spacing: 0.08em;
+    }
+
+    .pc-sname {
+      font-size: 8.5px;
+      letter-spacing: 0.04em;
+    }
+
+    .pc-withheld {
+      font-size: 10px;
+      letter-spacing: 0.3em;
+      padding: 2px 6px 2px 9px;
+    }
+
+    /* the figcap carries the null sentence; the compact lower zone has no room for it twice */
+    .pc-coinlab {
+      display: none;
+    }
+  }
+
+  /* ---------- ground-truth rules, verbatim ---------- */
+  .pc-rules {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: rule;
+    max-width: 760px;
+  }
+
+  .pc-rules li {
+    counter-increment: rule;
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 18px;
+    padding: 16px 0;
+    border-top: 1px solid var(--border-soft);
+    font-size: 16.5px;
+    color: var(--text);
+    line-height: 1.55;
+  }
+
+  .pc-rules li::before {
+    content: counter(rule, decimal-leading-zero);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--pearl-a);
+    padding-top: 3px;
+  }
+
+  .pc-rules-notes {
+    max-width: 760px;
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-soft);
+  }
+
+  /* ---------- panel and bank ---------- */
+  .pc-bank .fact dd {
+    font-size: 14.5px;
+  }
+
+  .pc-slugs {
+    list-style: none;
+    margin: 0 0 12px;
+    padding: 0;
+  }
+
+  .pc-slugs li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 10px;
+    padding: 6px 0;
+    border-top: 1px solid var(--border-soft);
+  }
+
+  .pc-slugs li:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .pc-slugs code {
+    font-size: 12.5px;
+    letter-spacing: 0.02em;
+    color: var(--text);
+  }
+
+  .pc-slugs li.small code {
+    color: var(--muted);
+  }
+
+  .pc-note {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    color: var(--faint);
+  }
+
+  .pc-fine {
+    margin: 0;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  /* ---------- status ---------- */
+  .pc-status {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 32px;
+  }
+
+  .pc-status-h {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    margin: 0 0 6px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+
+  .pc-mark {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    border: 1px solid var(--muted);
+  }
+
+  .pc-mark.done {
+    background: var(--pearl-a);
+    border-color: var(--pearl-a);
+  }
+
+  .pc-status-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .pc-status-list li {
+    padding: 10px 0;
+    border-top: 1px solid var(--border-soft);
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  .pc-sizing {
+    margin-top: 40px;
+  }
+
+  .pc-sub {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin: 44px 0 10px;
+  }
+
+  .pc-amend {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: amend;
+    max-width: 860px;
+  }
+
+  .pc-amend li {
+    counter-increment: amend;
+    display: grid;
+    grid-template-columns: 32px 104px 1fr;
+    gap: 14px;
+    padding: 10px 0;
+    border-top: 1px solid var(--border-soft);
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  .pc-amend li::before {
+    content: counter(amend);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--pearl-a);
+    padding-top: 2px;
+  }
+
+  .pc-date {
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: var(--faint);
+    padding-top: 3px;
+  }
+
+  .pc-stop p + p,
+  .pc-claims p + p {
+    margin-top: 12px;
+  }
+
+  .pc-claims-h {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin-top: 18px !important;
+    margin-bottom: 6px !important;
+  }
+
+  /* ---------- links and authors ---------- */
+  .pc-links {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-width: 760px;
+  }
+
+  .pc-links li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 14px;
+    padding: 11px 0;
+    border-top: 1px solid var(--border-soft);
+  }
+
+  .pc-links a {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    color: var(--accent);
+    background-image: linear-gradient(90deg, var(--pearl-a), var(--pearl-b));
+    background-repeat: no-repeat;
+    background-size: 100% 1px;
+    background-position: 0 100%;
+    padding-bottom: 1px;
+    transition: background-size 180ms var(--ease-press);
+  }
+
+  .pc-links a:hover {
+    background-size: 100% 2px;
+  }
+
+  /* while the repository is private its paths are plain text, not links */
+  .pc-links code {
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    color: var(--text);
+  }
+
+  .pc-upstream {
+    margin: 24px 0 0;
+    font-size: 15px;
+    color: var(--muted);
+    max-width: 700px;
+  }
+
+  .pc-authors {
+    margin: 14px 0 0;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+
+  @media (max-width: 880px) {
+    .pc-status {
+      grid-template-columns: 1fr;
+    }
+
+    .pc-amend li {
+      grid-template-columns: 28px 96px 1fr;
+      gap: 10px;
+    }
+  }
+</style>
+
+<script>
+  import { pearlLUT, lutColor, makeSim, glowSprite, reducedMotion } from '../lib/nacre.js';
+
+  function initPartialCreditPage() {
+    const canvas = document.getElementById('pc-canvas');
+    if (!canvas || canvas.dataset.init) return;
+    canvas.dataset.init = '1';
+
+    /* ---------------- constants ---------------- */
+    const A_PASS = 806; /* README example: patch A passes 806 of ~1000 hidden inputs */
+    const TOTAL = 1000;
+    const HUE_A = 0.02; /* pearl-a, cool */
+    const HUE_B = 0.36; /* pearl-b, warm */
+    const INK = (a) => `rgba(233,230,223,${a})`;
+    const ALERT = (a) => `rgba(216,160,122,${a})`; /* --alert: inversion only */
+    const RED = (a) => `rgba(194,69,47,${a})`; /* --press-red: withheld apparatus only */
+    const STRATA = [
+      { name: 'near_tie', lo: 0, hi: 50 },
+      { name: 'small', lo: 50, hi: 150 },
+      { name: 'medium', lo: 150, hi: 350 },
+      { name: 'large', lo: 350, hi: 700 },
+      { name: 'huge', lo: 700, hi: 1000 },
+    ];
+    /* strata are (lo, hi] on |rate(A) - rate(B)|, in thousandths */
+    const stratumIndex = (gk) => (gk <= 0 ? -1 : STRATA.findIndex((s) => gk <= s.hi));
+    const DUR = { score: 2200, pair: 1500, judge: 2600, verdict: 2000, hold: 2800, unpaired: 2600 };
+    const OUTCOME_INV = 'INVERSION — JUDGE PICKED THE PATCH EXECUTION RANKS LOWER';
+    const OUTCOME_OK = 'AGREES WITH EXECUTION';
+    const outcomeBoth = (vs) => vs.map((v) => `${v.order.toUpperCase()}: ${v.inversion ? 'INVERSION' : 'AGREES'}`).join(' · ');
+    const OUTCOME_BOTH_LONGEST = outcomeBoth([{ order: 'hi_first', inversion: true }, { order: 'lo_first', inversion: true }]);
+    /* the still's verdict slot shows both outcomes of the order it presents */
+    const STILL_HI_AS_A = 'A → agrees with execution · B → inversion';
+    const STILL_HI_AS_B = 'A → inversion · B → agrees with execution';
+
+    const lut = pearlLUT(undefined, 256, 2.3);
+    const lutRGB = (t) => lut[((Math.floor(t * lut.length) % lut.length) + lut.length) % lut.length];
+    const spriteA = glowSprite(lutRGB(HUE_A), 48, 0.9);
+    const spriteB = glowSprite(lutRGB(HUE_B), 48, 0.9);
+    const coinSprite = glowSprite([240, 238, 232], 64, 0.7);
+
+    /* ---------------- DOM ---------------- */
+    const $ = (id) => document.getElementById(id);
+    const plate = $('pc-plate');
+    /* under reduced motion the plate only ever shows the composed still (renderStill) */
+    plate.classList.toggle('still', reducedMotion);
+    const el = {
+      labA: $('pc-lab-a'),
+      labB: $('pc-lab-b'),
+      countA: $('pc-count-a'),
+      countB: $('pc-count-b'),
+      gaplab: $('pc-gaplab'),
+      rellab: $('pc-rellab'),
+      whA: $('pc-wh-a'),
+      whB: $('pc-wh-b'),
+      striplab: $('pc-striplab'),
+      snames: Array.from(document.querySelectorAll('#pc-stratum-names .pc-sname')),
+      sbounds: Array.from(document.querySelectorAll('#pc-stratum-bounds .pc-sbound')),
+      orderlab: $('pc-orderlab'),
+      card1: $('pc-card-1'),
+      card2: $('pc-card-2'),
+      cardlab1: $('pc-cardlab-1'),
+      cardlab2: $('pc-cardlab-2'),
+      v1: $('pc-verdict-1'),
+      v2: $('pc-verdict-2'),
+      coinlab: $('pc-coinlab'),
+      outcome: $('pc-outcome'),
+      phase: $('pc-phase'),
+      roHi: $('pc-ro-hi'),
+      roLo: $('pc-ro-lo'),
+      roGap: $('pc-ro-gap'),
+      roStratum: $('pc-ro-stratum'),
+      roOrder: $('pc-ro-order'),
+      roRel: $('pc-ro-rel'),
+      roVerdict: $('pc-ro-verdict'),
+      roOutcome: $('pc-ro-outcome'),
+      run: $('pc-run'),
+      gap: $('pc-gap'),
+      gapOut: $('pc-gap-out'),
+      orders: $('pc-orders'),
+      relation: $('pc-relation'),
+      relationVal: $('pc-relation-val'),
+      hint: $('pc-hint'),
+    };
+
+    /* ---------------- state ---------------- */
+    const S = {
+      gapK: 315, /* thousandths; B = A_PASS - gapK */
+      bothOrders: false,
+      crossed: false,
+      N: 100,
+      trial: 0,
+      order: 'hi_first',
+      phase: 'score',
+      phaseT: 0,
+      simT: 0,
+      a: null, /* Uint8Array(N): 1 = passes that hidden input */
+      b: null,
+      colT: null, /* Float64Array(cols): simT when the scan resolved that column */
+      resolvedCols: 0,
+      mask: 0, /* 0..1 — rows withheld while the judge card is up */
+      verdicts: [], /* one per presented order: { order, slot, patch, inversion } */
+      cardsShown: false,
+      stampsShown: false,
+      exclusive: 0, /* cells B passes that A fails (crossed only) */
+    };
+    const bPass = () => A_PASS - S.gapK;
+    const rateA = () => A_PASS / TOTAL;
+    const rateB = () => bPass() / TOTAL;
+    const paired = () => S.gapK > 0;
+
+    /* seeded xorshift for the pass pattern; the coin uses Math.random and nothing else */
+    let seed = 0x2f6e2b1;
+    const rand = () => {
+      seed ^= seed << 13;
+      seed ^= seed >>> 17;
+      seed ^= seed << 5;
+      seed >>>= 0;
+      return seed / 4294967296;
+    };
+    const shuffle = (arr) => {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = (rand() * (i + 1)) | 0;
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    };
+    const clamp01 = (v) => Math.max(0, Math.min(1, v));
+    /* the still's verdict slots, card 1 then card 2 */
+    const stillVerdicts = (both) => (both ? [STILL_HI_AS_A, STILL_HI_AS_B] : [S.order === 'hi_first' ? STILL_HI_AS_A : STILL_HI_AS_B]);
+    const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+
+    function makePattern() {
+      const N = S.N;
+      const aCount = Math.round(rateA() * N);
+      const bCount = Math.round(rateB() * N);
+      const idx = shuffle(Array.from({ length: N }, (_, i) => i));
+      const a = new Uint8Array(N);
+      const b = new Uint8Array(N);
+      const aPass = shuffle(idx.slice(0, aCount));
+      const aFail = shuffle(idx.slice(aCount));
+      aPass.forEach((i) => (a[i] = 1));
+      let excl = 0;
+      if (S.crossed && aFail.length && bCount > 0) {
+        excl = Math.min(aFail.length, bCount, Math.max(1, Math.round(bCount * 0.3)));
+      }
+      for (let k = 0; k < excl; k++) b[aFail[k]] = 1;
+      for (let k = 0; k < bCount - excl; k++) b[aPass[k]] = 1;
+      S.a = a;
+      S.b = b;
+      S.exclusive = excl;
+    }
+
+    /* ---------------- geometry (CSS px) ---------------- */
+    let G = null;
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+    /* the card's height is read from the DOM: it drives the vertical budget */
+    function measureCard(width, variant) {
+      for (const c of [el.card1, el.card2]) {
+        c.classList.toggle('tight', variant === 'tight');
+        c.classList.toggle('micro', variant === 'micro');
+        c.style.width = `${Math.round(width)}px`;
+      }
+      return el.card1.offsetHeight || 170;
+    }
+
+    /* the still's cards at a width and face, measured with the verdict text they show
+       (both outcomes, not the animation's "_"): the taller of the two orders' texts when
+       both cards are up; the live text is put back */
+    function measureStillCards(width, variant, both) {
+      const keep = el.v1.textContent;
+      let h = 0;
+      for (const text of stillVerdicts(both)) {
+        el.v1.textContent = text;
+        h = Math.max(h, measureCard(width, variant));
+      }
+      el.v1.textContent = keep;
+      return h;
+    }
+
+    /* the outcome's height at a width for a given text; the live text is put back */
+    function measureOutcome(width, text) {
+      const o = el.outcome;
+      const keepText = o.textContent;
+      const keepClass = o.className;
+      const keepWidth = o.style.width;
+      o.className = 'plate-label pc-outcome left';
+      o.style.width = `${Math.round(width)}px`;
+      o.textContent = text;
+      const h = o.offsetHeight || 30;
+      o.textContent = keepText;
+      o.className = keepClass;
+      o.style.width = keepWidth;
+      return h;
+    }
+
+    function geometry(view) {
+      const { W } = view;
+      const compact = W < 620;
+      const two = S.bothOrders;
+      /* compact-only card styles must apply before the card is measured */
+      plate.classList.toggle('compact', compact);
+      const pad = compact ? 14 : 30;
+      const labelW = compact ? 0 : 96;
+      const countW = compact ? 0 : 86;
+      const cols = compact ? 25 : 50;
+      const lines = Math.max(1, Math.round(S.N / cols));
+      const bandX = pad + labelW;
+      const availW = Math.max(40, W - bandX - pad - countW);
+      const pitch = Math.min(compact ? 11 : 18, availW / cols);
+      const bandW = cols * pitch;
+      const cell = pitch * 0.72;
+      const bandH = lines * pitch;
+      const rowLabelH = compact ? 15 : 0;
+      const stripH = compact ? 12 : 16;
+      const segGap = 3;
+      const segW = (bandW - segGap * 4) / 5;
+      const coinR = compact ? 13 : 20;
+      const g = {
+        W, compact, two, pad, labelW, countW, cols, lines, bandX, bandW, pitch, cell, bandH,
+        rowLabelH, stripH, segGap, segW, coinR,
+      };
+      /* compact rows: one column, each row's label and count above its band */
+      const compactRows = () => {
+        g.aY = 32 + rowLabelH; /* the verdict frame encloses the row label and stays under the top labels */
+        g.aEnd = g.aY + bandH;
+        g.barAY = g.aEnd + 6;
+        g.bracketY = g.barAY + 12;
+        g.barBY = g.bracketY + 12;
+        g.bY = g.barBY + 6 + rowLabelH;
+        g.bEnd = g.bY + bandH;
+      };
+
+      if (!compact) {
+        /* the card and the coin share the lower zone; a gap unit u stretches or
+           compresses the stack so one whole trial fits the plate's height, with
+           fixed clearances where HTML labels meet (bounds 16px above the strip,
+           names 23px under it, the order label 19px above the cards) */
+        const coinZoneW = Math.round(W * 0.3);
+        const cardsW = W - pad * 2 - coinZoneW - 10;
+        const cardWFor = (both) => (both ? (cardsW - 12) / 2 : Math.min(cardsW, 420));
+        /* fitted to the stylesheet's height, not to a height set below, so the
+           result never feeds back into itself */
+        const H = naturalHeight(view);
+        const stack = (u, tight, cardH) => {
+          const s = { u };
+          s.aY = 34 + 0.7 * u;
+          s.aEnd = s.aY + bandH;
+          s.barAY = s.aEnd + 0.5 * u;
+          s.bracketY = s.barAY + 1.1 * u;
+          s.barBY = s.bracketY + 1.1 * u;
+          s.bY = s.barBY + 0.5 * u;
+          s.bEnd = s.bY + bandH;
+          /* labels are ~18px tall (body line-height): the relation label under row B
+             needs 40px before the bound labels (tight plates drop it), and the names
+             under the strip need 44px before the order label above the cards */
+          s.stripY = s.bEnd + Math.max(2.9 * u, tight ? 24 : 40);
+          s.lowY = s.stripY + stripH + Math.max(2.75 * u, 44);
+          s.bottom = s.lowY + cardH + 40; /* the phase label row, clear of the card's 6px slide as it fades */
+          return s;
+        };
+        const fit = (tight, cardH, uMin = 8) => {
+          let u = clamp((H - 68 - 2 * bandH - stripH - cardH) / 9.55, uMin, 22);
+          let s = stack(u, tight, cardH);
+          while (s.bottom > H && u > uMin) {
+            u = Math.max(uMin, u - 0.5);
+            s = stack(u, tight, cardH);
+          }
+          return s;
+        };
+        /* the card face and row spacing for one order mode, tightest last */
+        const plan = (both) => {
+          const cardW = cardWFor(both);
+          let tight = false;
+          let cardH = measureCard(cardW, '');
+          let s = fit(tight, cardH);
+          if (s.bottom > H) {
+            tight = true;
+            cardH = measureCard(cardW, both ? 'micro' : 'tight');
+            s = fit(tight, cardH);
+          }
+          if (s.bottom > H && !both) {
+            /* the shortest 16/9 plates (just above the 1:1 switch): the single
+               card takes the micro face too, so it clears the phase label */
+            cardH = measureCard(cardW, 'micro');
+            s = fit(tight, cardH);
+          }
+          if (s.bottom > H) {
+            /* row spacing below its usual floor (7 keeps the gap label clear of
+               the lo bar) */
+            s = fit(tight, cardH, 7);
+          }
+          return { s, tight, cardW, cardH };
+        };
+        /* the other mode first, so the cards keep the faces of the one in use */
+        const alt = plan(!two);
+        const cur = plan(two);
+        /* last resort, met by the reduced-motion still with both orders just above
+           the 1:1 switch: if even the tightest stack overruns the plate, the plate
+           grows to the taller mode's stack, so a toggle never resizes it */
+        const need = Math.max(cur.s.bottom, alt.s.bottom);
+        setPlateHeight(need > H + 0.5 ? need + (plate.offsetHeight - plate.clientHeight) : 0);
+        const { s, tight, cardW, cardH } = cur;
+        Object.assign(g, s);
+        g.tight = tight;
+        g.cardW = cardW;
+        g.cardH = cardH;
+        g.cardX1 = pad;
+        g.cardX2 = pad + cardW + 12;
+        g.cardY = g.lowY;
+        g.labelY = g.lowY - 19; /* order and card labels sit above the cards */
+        const coinCX = W - pad - coinZoneW / 2;
+        g.coinXs = two ? [coinCX - coinR * 1.5, coinCX + coinR * 1.5] : [coinCX];
+        g.coinCY = g.lowY + coinR + 6;
+        g.outcomeX = coinCX;
+        g.outcomeY = g.coinCY + coinR + 12;
+        g.outcomeW = coinZoneW - 6;
+        g.outcomeLeft = false;
+      } else if (reducedMotion) {
+        /* compact still: nothing animates, so a card laid over the rows would never
+           lift off them. The rows, the bracket and the strip read in full, then the
+           order label (or the two cards' labels) and the card (or the two micro cards
+           side by side) under the strip names, then the phase label. */
+        const cardW1 = W - pad * 2;
+        const cardW2 = (W - pad * 2 - 6) / 2;
+        /* measure the other order mode first, so the cards keep the faces of the one in use */
+        const otherH = two ? measureStillCards(cardW1, 'tight', false) : measureStillCards(cardW2, 'micro', true);
+        const cardW = two ? cardW2 : cardW1;
+        const cardH = measureStillCards(cardW, two ? 'micro' : 'tight', two);
+        g.tight = true;
+        compactRows();
+        g.stripY = g.bEnd + 22; /* STRATUM label sits 15px above the strip */
+        g.labelY = g.stripY + stripH + 30; /* the names sit 4px under the strip, ~14px tall */
+        g.cardY = g.labelY + 19; /* the order and card labels sit above the cards */
+        /* Height budget: the taller order mode's cards, then the phase label row along
+           the bottom edge. Phones grow the plate past its square to fit, and a toggle
+           never resizes it. */
+        const phaseRow = 10 + (el.phase.offsetHeight || 16) + 14;
+        const need = Math.ceil(g.cardY + Math.max(cardH, otherH) + phaseRow);
+        setPlateHeight(need > W + 0.5 ? need + (plate.offsetHeight - plate.clientHeight) : 0);
+        g.cardW = cardW;
+        g.cardH = cardH;
+        g.cardX1 = pad;
+        g.cardX2 = pad + cardW + 6;
+        /* no coin and no outcome in the still: their row sits under the cards, empty */
+        g.lowY = g.cardY + cardH + 10;
+        g.coinXs = [pad + coinR];
+        g.coinCY = g.lowY + coinR + 2;
+        g.outcomeX = pad;
+        g.outcomeY = g.lowY + 2;
+        g.outcomeW = W - pad * 2;
+        g.outcomeLeft = true;
+      } else {
+        /* compact: the card overlays the withheld rows (their labels hide under it);
+           the order label sits under the card, then the strip, then a short lower
+           zone where the coin and the outcome share one row */
+        const cardW1 = W - pad * 2;
+        const cardW2 = (W - pad * 2 - 6) / 2;
+        /* measure the other order mode first, so the cards keep the faces of the one in use */
+        const otherH = two ? measureCard(cardW1, 'tight') : measureCard(cardW2, 'micro');
+        const cardW = two ? cardW2 : cardW1;
+        const cardH = measureCard(cardW, two ? 'micro' : 'tight');
+        g.tight = true;
+        compactRows();
+        g.cardY = g.aY - rowLabelH + 14;
+        const x0 = pad + coinR;
+        const coinXsFor = (both) => (both ? [x0, x0 + coinR * 2 + 6] : [x0]);
+        const outcomeXFor = (both) => coinXsFor(both)[both ? 1 : 0] + coinR + 10;
+        /* the stack under a card of height h: order label (clear of the card's 6px
+           slide as it fades), strip, then the coin row */
+        const stackFor = (h) => {
+          const labelY = g.cardY + h + 8;
+          const stripY = Math.max(g.bEnd + 22, labelY + 32); /* STRATUM label sits 15px above the strip */
+          return { labelY, stripY, lowY: stripY + stripH + 24 };
+        };
+        /* Height budget. The stack is fixed from the top, so on the narrowest phones
+           a square plate is too short for it. The plate then grows to the taller of
+           the two order modes, so a toggle never resizes it: the card, the coin row
+           (coin and inversion ring, or the longest outcome), then the phase label
+           row along the bottom edge. */
+        const rowBottom = (h, both) => {
+          const outH = measureOutcome(W - pad - outcomeXFor(both), both ? OUTCOME_BOTH_LONGEST : OUTCOME_INV);
+          return stackFor(h).lowY + 2 + Math.max(coinR * 2 + 6, outH);
+        };
+        const phaseRow = 6 + (el.phase.offsetHeight || 16) + 14;
+        const need = Math.ceil(Math.max(rowBottom(cardH, two), rowBottom(otherH, !two)) + phaseRow);
+        setPlateHeight(need > W + 0.5 ? need + (plate.offsetHeight - plate.clientHeight) : 0);
+        const st = stackFor(cardH);
+        g.cardW = cardW;
+        g.cardH = cardH;
+        g.cardX1 = pad;
+        g.cardX2 = pad + cardW + 6;
+        g.labelY = st.labelY;
+        g.stripY = st.stripY;
+        g.lowY = st.lowY;
+        g.coinXs = coinXsFor(two);
+        g.coinCY = g.lowY + coinR + 2;
+        g.outcomeX = outcomeXFor(two);
+        g.outcomeY = g.lowY + 2;
+        g.outcomeW = W - pad - g.outcomeX;
+        g.outcomeLeft = true;
+      }
+      return g;
+    }
+
+    /* An explicit plate height (border box) when the plate is too short for its
+       stack (see the height budgets in geometry), or 0 for the stylesheet's aspect
+       ratio. The ratio is dropped while a height is set: a ratio with a min-height
+       would widen the plate past its column. */
+    function setPlateHeight(px) {
+      const h = px ? `${Math.ceil(px)}px` : '';
+      const ar = px ? 'auto' : '';
+      if (plate.style.height !== h) plate.style.height = h;
+      if (plate.style.aspectRatio !== ar) plate.style.aspectRatio = ar;
+    }
+
+    /* the plate's inner height under the stylesheet alone (its aspect ratio) */
+    function naturalHeight(view) {
+      const h = plate.style.height;
+      if (!h) return view.H;
+      const ar = plate.style.aspectRatio;
+      plate.style.height = '';
+      plate.style.aspectRatio = '';
+      const natural = plate.clientHeight;
+      plate.style.height = h;
+      plate.style.aspectRatio = ar;
+      return natural;
+    }
+
+    const place = (node, left, top, width) => {
+      node.style.left = `${Math.round(left)}px`;
+      node.style.top = `${Math.round(top)}px`;
+      if (width != null) node.style.width = `${Math.round(width)}px`;
+    };
+    const cellX = (i) => G.bandX + (i % G.cols) * G.pitch + (G.pitch - G.cell) / 2;
+    const cellY = (bandY, i) => bandY + Math.floor(i / G.cols) * G.pitch + (G.pitch - G.cell) / 2;
+    const xHi = () => G.bandX + rateA() * G.bandW;
+    const xLo = () => G.bandX + rateB() * G.bandW;
+
+    function layoutDom() {
+      const g = G;
+      plate.classList.toggle('compact', g.compact);
+      plate.classList.toggle('tight', g.tight);
+      if (g.compact) {
+        place(el.labA, g.bandX, g.aY - g.rowLabelH - 1);
+        place(el.labB, g.bandX, g.bY - g.rowLabelH - 1);
+        place(el.countA, g.bandX + g.bandW - 70, g.aY - g.rowLabelH - 1, 70);
+        place(el.countB, g.bandX + g.bandW - 70, g.bY - g.rowLabelH - 1, 70);
+        el.countA.style.textAlign = 'right';
+        el.countB.style.textAlign = 'right';
+        place(el.striplab, g.bandX, g.stripY - 15);
+      } else {
+        place(el.labA, g.pad, g.aY + g.bandH / 2 - 8);
+        place(el.labB, g.pad, g.bY + g.bandH / 2 - 8);
+        place(el.countA, g.bandX + g.bandW + 14, g.aY + g.bandH / 2 - 8);
+        place(el.countB, g.bandX + g.bandW + 14, g.bY + g.bandH / 2 - 8);
+        el.countA.style.textAlign = '';
+        el.countB.style.textAlign = '';
+        el.countA.style.width = '';
+        el.countB.style.width = '';
+        place(el.striplab, g.pad, g.stripY + g.stripH / 2 - 8);
+      }
+      place(el.rellab, g.bandX, g.bEnd + 6);
+      placeGapLabel();
+      el.snames.forEach((n, i) => place(n, g.bandX + i * (g.segW + g.segGap) + g.segW / 2, g.stripY + g.stripH + (g.compact ? 4 : 7)));
+      el.sbounds.forEach((n, i) => {
+        const x = i === 5 ? g.bandX + g.bandW : g.bandX + i * (g.segW + g.segGap) - (i ? g.segGap / 2 : 0);
+        place(n, x, g.stripY - 16);
+      });
+
+      /* judge cards and their annotations */
+      place(el.card1, g.cardX1, g.cardY);
+      place(el.card2, g.cardX2, g.cardY);
+      place(el.cardlab1, g.cardX1, g.labelY);
+      place(el.cardlab2, g.cardX2, g.labelY);
+      setOrderLabel();
+      place(el.orderlab, g.cardX1, g.labelY);
+
+      /* withheld stamps sit on the rows (not shown on compact, where the card covers them) */
+      place(el.whA, g.bandX + g.bandW / 2, g.aY + g.bandH / 2);
+      place(el.whB, g.bandX + g.bandW / 2, g.bY + g.bandH / 2);
+
+      /* coin zone: the outcome, then the null caption */
+      el.outcome.classList.toggle('left', g.outcomeLeft);
+      place(el.outcome, g.outcomeX, g.outcomeY, g.outcomeW);
+      const outH = el.outcome.offsetHeight || 30;
+      place(el.coinlab, g.outcomeX, g.outcomeY + outH + 8, g.outcomeW);
+      el.coinlab.style.transform = g.outcomeLeft ? 'none' : 'translateX(-50%)';
+      el.coinlab.style.whiteSpace = 'normal';
+      el.coinlab.style.textAlign = g.outcomeLeft ? 'left' : 'center';
+      el.coinlab.style.lineHeight = '1.5';
+
+      /* the phase label keeps the layout's gutter: in line with the row labels */
+      el.phase.style.left = `${g.pad}px`;
+    }
+
+    /* the gap label rides the bracket, so it moves whenever the gap does (every
+       startTrial and still frame, through setStratumDom), not only on a relayout;
+       a shown label is also held inside the plate's padding, which only the
+       long gap-0 label on the narrowest plates needs */
+    function placeGapLabel() {
+      if (!G) return;
+      const half = el.gaplab.offsetWidth / 2; /* 0 while hidden: placed again when shown */
+      place(el.gaplab, clamp((xLo() + xHi()) / 2, G.pad + half, G.W - G.pad - half), G.bracketY - 7);
+    }
+
+    function relayout() {
+      if (!sim) return;
+      G = geometry(sim.view);
+      layoutDom();
+    }
+
+    /* ---------------- HTML state ---------------- */
+    const fmt = (n) => n.toLocaleString('en-US');
+    function setCounts(kA, kB) {
+      el.countA.innerHTML = `<strong>${fmt(kA)}</strong>&thinsp;/&thinsp;${fmt(TOTAL)}`;
+      el.countB.innerHTML = `<strong>${fmt(kB)}</strong>&thinsp;/&thinsp;${fmt(TOTAL)}`;
+    }
+    let lastCounts = '';
+    function updateCounts(progress) {
+      const kA = Math.round(A_PASS * progress);
+      const kB = Math.round(bPass() * progress);
+      const key = `${kA}/${kB}`;
+      if (key === lastCounts) return;
+      lastCounts = key;
+      setCounts(kA, kB);
+    }
+    function setPhaseLabel(text) {
+      if (el.phase.textContent !== text) el.phase.textContent = text;
+    }
+    function setStratumDom() {
+      const idx = stratumIndex(S.gapK);
+      el.snames.forEach((n, i) => n.classList.toggle('lit', i === idx && S.phase !== 'score'));
+      el.roStratum.textContent = idx < 0 ? 'none' : STRATA[idx].name;
+      el.gaplab.textContent = idx < 0 ? 'GAP 0 · NEVER PAIRED' : `GAP ${(S.gapK / 1000).toFixed(3)}`;
+      placeGapLabel();
+    }
+    /* the single-order label; compact plates get the short form, as with the phase label */
+    let orderHtml = null;
+    function setOrderLabel() {
+      let html = '';
+      if (!S.bothOrders && paired()) {
+        const hi = S.order === 'hi_first';
+        html = G && G.compact
+          ? hi ? 'ORDER &middot; HI_FIRST &middot; A SHOWN AS A' : 'ORDER &middot; LO_FIRST &middot; A SHOWN AS B'
+          : hi ? 'ORDER &middot; HI_FIRST &middot; PATCH A SHOWN AS CANDIDATE A' : 'ORDER &middot; LO_FIRST &middot; PATCH A SHOWN AS CANDIDATE B';
+      }
+      if (html !== orderHtml) {
+        orderHtml = html;
+        el.orderlab.innerHTML = html;
+      }
+      el.orderlab.hidden = !html;
+    }
+    function setStaticReadouts() {
+      /* equal pass rates are never paired: no relation, no order, no judge call */
+      const isPair = paired();
+      el.roHi.textContent = fmt(A_PASS);
+      el.roLo.textContent = fmt(bPass());
+      el.roGap.textContent = (S.gapK / 1000).toFixed(3);
+      el.roRel.textContent = !isPair ? '—' : S.crossed ? 'crossed' : 'nested';
+      el.roOrder.textContent = !isPair ? '—' : S.bothOrders ? 'both' : S.order;
+      el.rellab.innerHTML = S.crossed
+        ? `CROSSED &middot; B PASSES ${S.exclusive} CELL${S.exclusive === 1 ? '' : 'S'} A FAILS &middot; &ldquo;BETTER&rdquo; IS ONLY A COUNT`
+        : 'NESTED &middot; B &sub; A &middot; AN INVERSION HERE IS UNAMBIGUOUSLY AN ERROR';
+      el.rellab.hidden = !isPair;
+      setOrderLabel();
+      el.cardlab1.hidden = !S.bothOrders || !isPair;
+      el.cardlab2.hidden = !S.bothOrders || !isPair;
+      el.card2.hidden = !S.bothOrders;
+      el.hint.textContent = paired()
+        ? `A is fixed at ${fmt(A_PASS)}; the slider moves B`
+        : 'Equal pass rates are never paired';
+      setStratumDom();
+    }
+    function showCards(on) {
+      if (S.cardsShown === on) return;
+      S.cardsShown = on;
+      el.card1.classList.toggle('up', on);
+      el.card2.classList.toggle('up', on);
+      /* .cardup: the compact animation's card is over the rows (the still's never is) */
+      plate.classList.toggle('cardup', on && !reducedMotion);
+    }
+    function showStamps(on) {
+      if (S.stampsShown === on) return;
+      S.stampsShown = on;
+      const hide = !on || (G && G.compact);
+      el.whA.hidden = hide;
+      el.whB.hidden = hide;
+    }
+    function clearVerdictDom() {
+      el.v1.textContent = '_';
+      el.v2.textContent = '_';
+      el.roVerdict.textContent = '_';
+      el.roOutcome.textContent = '—';
+      el.outcome.textContent = '';
+      el.outcome.className = 'plate-label pc-outcome';
+      el.coinlab.hidden = true;
+    }
+
+    /* ---------------- trial lifecycle ---------------- */
+    const LAND = 1100; /* ms into the verdict phase when the coin settles */
+    let sim = null;
+
+    /* The verdict is a fair coin per presented order. It never reads the gap. */
+    function drawVerdicts() {
+      const orders = S.bothOrders ? ['hi_first', 'lo_first'] : [S.order];
+      S.verdicts = orders.map((order) => {
+        const slot = Math.random() < 0.5 ? 'A' : 'B';
+        const patch = (order === 'hi_first') === (slot === 'A') ? 'hi' : 'lo';
+        return { order, slot, patch, inversion: patch === 'lo', landed: false };
+      });
+    }
+
+    function phaseLabelFor(phase) {
+      const c = G && G.compact;
+      switch (phase) {
+        case 'score': return c ? '01 SCORING' : '01 SCORING · EVERY CANDIDATE RUNS ON EVERY HIDDEN INPUT';
+        case 'pair': return c ? '02 PAIRING' : '02 PAIRING · GAP = |RATE(A) − RATE(B)| → STRATUM';
+        case 'judge': return c ? '03 JUDGING · WITHHELD' : '03 JUDGING · TESTS AND PASS RATES WITHHELD';
+        case 'verdict': return c ? '04 VERDICT · FAIR COIN' : '04 VERDICT · A FAIR COIN AT THE NULL, 0.50';
+        case 'hold': return c ? '04 VERDICT · FAIR COIN' : '04 VERDICT · A FAIR COIN AT THE NULL, 0.50';
+        case 'unpaired': return c ? 'NEVER PAIRED AT GAP 0' : 'EQUAL PASS RATES ARE NEVER PAIRED · NO JUDGE CALL';
+        default: return '';
+      }
+    }
+
+    function startTrial(quick) {
+      const keepScan = quick && S.phase !== 'score' && S.a;
+      if (!quick) S.trial++;
+      if (!S.bothOrders && !quick) S.order = S.trial % 2 ? 'hi_first' : 'lo_first';
+      const wantN = sim && sim.view.degraded ? 50 : 100;
+      if (wantN !== S.N) {
+        S.N = wantN;
+        if (sim) {
+          G = geometry(sim.view);
+          layoutDom();
+        }
+      }
+      seed = ((0x9e3779b9 ^ Math.imul(S.trial + 1, 0x85ebca6b)) >>> 0) || 1;
+      makePattern();
+      S.colT = new Float64Array(G ? G.cols : 1).fill(-1e9);
+      S.resolvedCols = 0;
+      S.mask = 0;
+      S.verdicts = [];
+      showCards(false);
+      showStamps(false);
+      clearVerdictDom();
+      S.phaseT = 0;
+      lastCounts = '';
+      if (keepScan) {
+        /* the rows are already scored: go straight to pairing, or to the
+           never-paired notice when the slider sits at gap 0 */
+        S.phase = paired() ? 'pair' : 'unpaired';
+        S.resolvedCols = G.cols;
+        updateCounts(1);
+      } else {
+        S.phase = 'score';
+        updateCounts(0);
+      }
+      el.gaplab.hidden = true;
+      setStaticReadouts();
+      setPhaseLabel(phaseLabelFor(S.phase));
+    }
+
+    function advance(dt) {
+      S.phaseT += dt;
+      const next = (phase) => {
+        S.phase = phase;
+        S.phaseT = 0;
+        setPhaseLabel(phaseLabelFor(phase));
+      };
+      switch (S.phase) {
+        case 'score':
+          if (S.phaseT >= DUR.score + 320) next(paired() ? 'pair' : 'unpaired');
+          break;
+        case 'pair':
+          if (!paired()) {
+            next('unpaired'); /* equal pass rates are never paired: no judge call */
+            break;
+          }
+          if (S.phaseT >= DUR.pair) {
+            drawVerdicts();
+            next('judge');
+            showCards(true);
+          }
+          break;
+        case 'judge':
+          if (S.phaseT >= DUR.judge) next('verdict');
+          break;
+        case 'verdict':
+          if (S.phaseT >= DUR.verdict) next('hold');
+          break;
+        case 'hold':
+          if (S.phaseT >= DUR.hold) startTrial(false);
+          break;
+        case 'unpaired':
+          if (S.phaseT >= DUR.unpaired) startTrial(false);
+          break;
+      }
+    }
+
+    function landDom() {
+      S.verdicts.forEach((v, k) => ((k === 0 ? el.v1 : el.v2).textContent = v.slot));
+      el.roVerdict.textContent = S.verdicts.map((v) => v.slot).join(' · ');
+      el.roOutcome.textContent = S.verdicts.map((v) => (v.inversion ? 'inversion' : 'agrees')).join(' · ');
+      const anyInv = S.verdicts.some((v) => v.inversion);
+      el.outcome.textContent = S.bothOrders ? outcomeBoth(S.verdicts) : anyInv ? OUTCOME_INV : OUTCOME_OK;
+      el.outcome.className = `plate-label pc-outcome ${anyInv ? 'inv' : 'ok'}`;
+      el.coinlab.hidden = false;
+      layoutDom();
+    }
+
+    /* ---------------- drawing ---------------- */
+    function drawBand(ctx, bandY, vec, hue, sprite, isB) {
+      const g = G;
+      const dim = 1 - 0.8 * S.mask;
+      const resolved = S.resolvedCols;
+      /* unresolved cells: a faint registration dot */
+      ctx.fillStyle = INK(0.1);
+      for (let i = 0; i < S.N; i++) {
+        if (i % g.cols < resolved) continue;
+        const x = cellX(i);
+        const y = cellY(bandY, i);
+        ctx.fillRect(x + g.cell / 2 - 1, y + g.cell / 2 - 1, 2, 2);
+      }
+      /* passes: filled with the patch's LUT colour */
+      ctx.fillStyle = lutColor(lut, hue, 0.86 * dim);
+      for (let i = 0; i < S.N; i++) {
+        if (i % g.cols >= resolved || !vec[i]) continue;
+        ctx.fillRect(cellX(i), cellY(bandY, i), g.cell, g.cell);
+      }
+      /* crossed pairs: B passes an input A fails — hollow centre */
+      if (isB && S.crossed) {
+        ctx.fillStyle = `rgba(4,5,10,${0.9 * dim})`;
+        for (let i = 0; i < S.N; i++) {
+          if (i % g.cols >= resolved || !vec[i] || S.a[i]) continue;
+          const x = cellX(i);
+          const y = cellY(bandY, i);
+          ctx.fillRect(x + g.cell * 0.32, y + g.cell * 0.32, g.cell * 0.36, g.cell * 0.36);
+        }
+      }
+      /* fails: hollow with an x */
+      ctx.strokeStyle = INK(0.3 * dim);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = 0; i < S.N; i++) {
+        if (i % g.cols >= resolved || vec[i]) continue;
+        const x = cellX(i);
+        const y = cellY(bandY, i);
+        const c = g.cell;
+        ctx.rect(x + 0.5, y + 0.5, c - 1, c - 1);
+        ctx.moveTo(x + 2, y + 2);
+        ctx.lineTo(x + c - 2, y + c - 2);
+        ctx.moveTo(x + c - 2, y + 2);
+        ctx.lineTo(x + 2, y + c - 2);
+      }
+      ctx.stroke();
+      /* fresh resolves glow for a beat — pre-rendered sprites, no shadowBlur */
+      if (S.colT) {
+        ctx.globalCompositeOperation = 'lighter';
+        for (let i = 0; i < S.N; i++) {
+          const col = i % g.cols;
+          if (col >= resolved || !vec[i]) continue;
+          const age = S.simT - S.colT[col];
+          if (age > 280) continue;
+          ctx.globalAlpha = (1 - age / 280) * 0.55;
+          const x = cellX(i) + g.cell / 2;
+          const y = cellY(bandY, i) + g.cell / 2;
+          ctx.drawImage(sprite, x - g.cell * 1.3, y - g.cell * 1.3, g.cell * 2.6, g.cell * 2.6);
+        }
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+      }
+      /* withheld: the only use of press-red on this plate */
+      if (S.mask > 0.01) {
+        const m = S.mask;
+        ctx.fillStyle = `rgba(4,5,10,${0.5 * m})`;
+        ctx.fillRect(g.bandX - 5, bandY - 5, g.bandW + 10, g.bandH + 10);
+        ctx.strokeStyle = RED(0.6 * m);
+        ctx.strokeRect(g.bandX - 4.5, bandY - 4.5, g.bandW + 9, g.bandH + 9);
+        ctx.beginPath();
+        ctx.moveTo(g.bandX - 4, bandY - 4);
+        ctx.lineTo(g.bandX + g.bandW + 4, bandY + g.bandH + 4);
+        ctx.strokeStyle = RED(0.35 * m);
+        ctx.stroke();
+      }
+    }
+
+    function drawPairing(ctx, pairP) {
+      const g = G;
+      const hi = xHi();
+      const lo = xLo();
+      const barP = easeOut(clamp01(pairP / 600));
+      ctx.fillStyle = INK(0.08);
+      ctx.fillRect(g.bandX, g.barAY - 1, g.bandW, 2);
+      ctx.fillRect(g.bandX, g.barBY - 1, g.bandW, 2);
+      ctx.fillStyle = lutColor(lut, HUE_A, 0.9);
+      ctx.fillRect(g.bandX, g.barAY - 1, (hi - g.bandX) * barP, 2);
+      ctx.fillStyle = lutColor(lut, HUE_B, 0.9);
+      ctx.fillRect(g.bandX, g.barBY - 1, (lo - g.bandX) * barP, 2);
+      const brP = easeOut(clamp01((pairP - 500) / 450));
+      if (brP > 0) {
+        ctx.strokeStyle = INK(0.7 * brP);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(Math.round(hi) + 0.5, g.barAY + 2);
+        ctx.lineTo(Math.round(hi) + 0.5, g.bracketY + 0.5);
+        ctx.moveTo(Math.round(lo) + 0.5, g.barBY - 2);
+        ctx.lineTo(Math.round(lo) + 0.5, g.bracketY + 0.5);
+        ctx.moveTo(lo, g.bracketY + 0.5);
+        ctx.lineTo(lo + (hi - lo) * brP, g.bracketY + 0.5);
+        ctx.stroke();
+      }
+      const showGap = brP >= 0.5;
+      if (el.gaplab.hidden === showGap) {
+        el.gaplab.hidden = !showGap;
+        if (showGap) placeGapLabel();
+      }
+      return easeOut(clamp01((pairP - 900) / 500));
+    }
+
+    function drawStrip(ctx, litP) {
+      const g = G;
+      const idx = stratumIndex(S.gapK);
+      for (let i = 0; i < 5; i++) {
+        const x = g.bandX + i * (g.segW + g.segGap);
+        const lit = i === idx && litP > 0;
+        const hue = 0.05 + i * 0.17;
+        ctx.fillStyle = lit ? lutColor(lut, hue, 0.12 + 0.4 * litP) : INK(0.035);
+        ctx.fillRect(x, g.stripY, g.segW, g.stripH);
+        ctx.strokeStyle = lit ? lutColor(lut, hue, 0.5 + 0.4 * litP) : INK(0.16);
+        ctx.strokeRect(Math.round(x) + 0.5, g.stripY + 0.5, Math.round(g.segW) - 1, g.stripH - 1);
+        if (lit) {
+          const s = STRATA[i];
+          const px = x + ((S.gapK - s.lo) / (s.hi - s.lo)) * g.segW;
+          ctx.fillStyle = INK(0.9 * litP);
+          ctx.fillRect(Math.round(px) - 0.5, g.stripY - 4, 1, g.stripH + 8);
+        }
+      }
+      const lit = idx >= 0 && litP > 0.3;
+      el.snames.forEach((n, i) => {
+        const want = lit && i === idx;
+        if (n.classList.contains('lit') !== want) n.classList.toggle('lit', want);
+      });
+    }
+
+    function drawCoins(ctx, vt) {
+      const g = G;
+      const flipT = clamp01(vt / LAND);
+      const n = S.verdicts.length;
+      S.verdicts.forEach((v, k) => {
+        const cx = g.coinXs[Math.min(k, g.coinXs.length - 1)];
+        const lift = Math.sin(Math.PI * Math.min(1, flipT)) * g.coinR * 1.4;
+        const cy = g.coinCY - lift;
+        const th = easeOut(flipT) * Math.PI * 7 + k * 0.9;
+        let hue;
+        let rx;
+        if (flipT < 0.92) {
+          hue = Math.cos(th) >= 0 ? HUE_A : HUE_B;
+          rx = Math.max(1.5, Math.abs(Math.cos(th)) * g.coinR);
+        } else {
+          hue = v.patch === 'hi' ? HUE_A : HUE_B;
+          rx = g.coinR * (0.92 + 0.08 * ((flipT - 0.92) / 0.08));
+        }
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = flipT >= 1 ? 0.3 : 0.18;
+        ctx.drawImage(coinSprite, cx - g.coinR * 1.9, cy - g.coinR * 1.9, g.coinR * 3.8, g.coinR * 3.8);
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rx, g.coinR, 0, 0, Math.PI * 2);
+        ctx.fillStyle = lutColor(lut, hue, 0.92);
+        ctx.fill();
+        ctx.strokeStyle = INK(0.55);
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rx * 0.68, g.coinR * 0.68, 0, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(4,5,10,0.45)';
+        ctx.stroke();
+        if (flipT >= 1 && v.inversion) {
+          ctx.beginPath();
+          ctx.ellipse(cx, cy, g.coinR + 5, g.coinR + 5, 0, 0, Math.PI * 2);
+          ctx.strokeStyle = ALERT(0.9);
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          ctx.lineWidth = 1;
+        }
+      });
+    }
+
+    function drawOutcomeFrames(ctx, alpha) {
+      const g = G;
+      if (alpha <= 0) return;
+      S.verdicts.forEach((v) => {
+        const y = v.inversion ? g.bY : g.aY;
+        /* compact plates carry the row label above the band: the frame encloses it */
+        const top = g.compact ? y - g.rowLabelH - 3.5 : y - 6.5;
+        const bottom = y + g.bandH + 6.5;
+        ctx.strokeStyle = v.inversion ? ALERT(0.9 * alpha) : INK(0.5 * alpha);
+        ctx.lineWidth = 1;
+        ctx.strokeRect(g.bandX - 6.5, top, g.bandW + 13, bottom - top);
+        const t = 10;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(g.bandX - 6, top + 0.5 + t);
+        ctx.lineTo(g.bandX - 6, top + 0.5);
+        ctx.lineTo(g.bandX - 6 + t, top + 0.5);
+        ctx.moveTo(g.bandX + g.bandW + 6 - t, bottom - 0.5);
+        ctx.lineTo(g.bandX + g.bandW + 6, bottom - 0.5);
+        ctx.lineTo(g.bandX + g.bandW + 6, bottom - 0.5 - t);
+        ctx.stroke();
+        ctx.lineWidth = 1;
+      });
+    }
+
+    function render(ctx, t, dt, view) {
+      if (!G) {
+        G = geometry(view);
+        layoutDom();
+      }
+      if (!S.a) startTrial(false);
+      S.simT += dt;
+      advance(dt);
+      const g = G;
+      ctx.clearRect(0, 0, view.W, view.H);
+
+      /* phase 1: the scan line resolves columns as it passes them */
+      if (S.phase === 'score') {
+        const scanX = g.bandX + clamp01(S.phaseT / DUR.score) * (g.bandW + g.pitch);
+        while (S.resolvedCols < g.cols && g.bandX + S.resolvedCols * g.pitch + g.pitch / 2 <= scanX) {
+          S.colT[S.resolvedCols] = S.simT;
+          S.resolvedCols++;
+        }
+        updateCounts(S.resolvedCols / g.cols);
+      }
+
+      /* withheld mask follows the judge card */
+      const cardUp = S.phase === 'judge' || (S.phase === 'verdict' && S.phaseT < LAND);
+      const target = cardUp ? 1 : 0;
+      S.mask += (target - S.mask) * (1 - Math.exp(-dt / 130));
+      if (Math.abs(S.mask - target) < 0.01) S.mask = target;
+      showStamps(S.mask > 0.5);
+      /* on a compact plate the card covers the rows, so it leaves when the coin
+         lands and the chosen row's frame takes over */
+      if (g.compact && !cardUp && S.phase !== 'judge') showCards(false);
+
+      drawBand(ctx, g.aY, S.a, HUE_A, spriteA, false);
+      drawBand(ctx, g.bY, S.b, HUE_B, spriteB, true);
+
+      if (S.phase === 'score') {
+        const scanX = g.bandX + clamp01(S.phaseT / DUR.score) * (g.bandW + g.pitch);
+        if (scanX <= g.bandX + g.bandW + 2) {
+          const grad = ctx.createLinearGradient(scanX - 42, 0, scanX, 0);
+          grad.addColorStop(0, lutColor(lut, HUE_A, 0));
+          grad.addColorStop(1, lutColor(lut, HUE_A, 0.16));
+          ctx.fillStyle = grad;
+          ctx.fillRect(scanX - 42, g.aY - 6, 42, g.bEnd - g.aY + 12);
+          ctx.fillStyle = INK(0.6);
+          ctx.fillRect(Math.round(scanX), g.aY - 8, 1, g.bEnd - g.aY + 16);
+        }
+      }
+
+      let litP = 0;
+      if (S.phase === 'pair' || S.phase === 'unpaired') litP = drawPairing(ctx, S.phaseT);
+      else if (S.phase !== 'score') litP = drawPairing(ctx, 1e5);
+      drawStrip(ctx, litP);
+
+      if (S.phase === 'verdict' || S.phase === 'hold') {
+        const vt = S.phase === 'verdict' ? S.phaseT : 1e5;
+        if (vt >= LAND && S.verdicts.length && !S.verdicts[0].landed) {
+          S.verdicts.forEach((v) => (v.landed = true));
+          landDom();
+        }
+        drawCoins(ctx, vt);
+        drawOutcomeFrames(ctx, clamp01((vt - LAND) / 300));
+      }
+    }
+
+    /* composed still: both rows scored, bracket, lit stratum, the card with both outcomes */
+    function renderStill(ctx, view) {
+      /* the verdict slots first, so the layout measures the cards as they read */
+      if (paired()) {
+        const [v1, v2 = STILL_HI_AS_B] = stillVerdicts(S.bothOrders);
+        el.v1.textContent = v1;
+        el.v2.textContent = v2;
+      }
+      G = geometry(view);
+      layoutDom();
+      if (!S.a) makePattern();
+      S.resolvedCols = G.cols;
+      S.colT = new Float64Array(G.cols).fill(-1e9);
+      S.mask = 0;
+      S.phase = paired() ? 'hold' : 'unpaired';
+      ctx.clearRect(0, 0, view.W, view.H);
+      drawBand(ctx, G.aY, S.a, HUE_A, spriteA, false);
+      drawBand(ctx, G.bY, S.b, HUE_B, spriteB, true);
+      drawStrip(ctx, drawPairing(ctx, 1e5));
+      /* HTML side of the still */
+      setCounts(A_PASS, bPass());
+      el.gaplab.hidden = false;
+      setStaticReadouts();
+      showStamps(false);
+      el.coinlab.hidden = true;
+      el.outcome.textContent = '';
+      el.outcome.className = 'plate-label pc-outcome';
+      if (paired()) {
+        el.roVerdict.textContent = 'A | B';
+        el.roOutcome.textContent = 'agrees | inversion';
+        showCards(true);
+        setPhaseLabel(G.compact ? 'STILL · NO COIN' : 'STILL · ONE TRIAL FULLY SCORED · BOTH OUTCOMES SHOWN, NO COIN');
+      } else {
+        showCards(false);
+        el.roVerdict.textContent = '_';
+        el.roOutcome.textContent = '—';
+        setPhaseLabel(phaseLabelFor('unpaired'));
+      }
+    }
+
+    sim = makeSim(canvas, {
+      init: (view) => {
+        const prevCols = G ? G.cols : 0;
+        G = geometry(view);
+        layoutDom();
+        if (!reducedMotion && S.a && prevCols && prevCols !== G.cols) startTrial(S.phase !== 'score');
+        if (!reducedMotion && S.a) setPhaseLabel(phaseLabelFor(S.phase));
+      },
+      render,
+      renderStill,
+    });
+    if (!reducedMotion) startTrial(false);
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => {
+        /* the mono font changes the card's measured height, so re-budget */
+        relayout();
+        if (reducedMotion) sim.restart();
+      });
+    }
+
+    /* ---------------- controls ---------------- */
+    function restartQuick() {
+      if (reducedMotion) {
+        makePattern();
+        sim.restart();
+        return;
+      }
+      startTrial(true);
+    }
+    el.run.addEventListener('click', () => {
+      if (reducedMotion) {
+        S.trial++;
+        seed = ((0x9e3779b9 ^ Math.imul(S.trial + 1, 0x85ebca6b)) >>> 0) || 1;
+        makePattern();
+        sim.restart();
+        return;
+      }
+      startTrial(false);
+    });
+    el.gap.addEventListener('input', () => {
+      const v = Math.round(Number(el.gap.value) / 5) * 5;
+      S.gapK = Math.max(0, Math.min(800, v));
+      el.gapOut.textContent = (S.gapK / 1000).toFixed(3);
+      restartQuick();
+    });
+    el.orders.addEventListener('click', () => {
+      S.bothOrders = !S.bothOrders;
+      el.orders.setAttribute('aria-pressed', String(S.bothOrders));
+      el.card2.hidden = !S.bothOrders;
+      relayout();
+      restartQuick();
+    });
+    el.relation.addEventListener('click', () => {
+      S.crossed = !S.crossed;
+      el.relation.setAttribute('aria-pressed', String(S.crossed));
+      el.relationVal.textContent = S.crossed ? 'crossed' : 'nested';
+      restartQuick();
+    });
+  }
+
+  document.addEventListener('astro:page-load', initPartialCreditPage);
+</script>

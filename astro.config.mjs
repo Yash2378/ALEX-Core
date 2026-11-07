@@ -7,7 +7,4 @@ export default defineConfig({
   build: {
     format: 'directory',
   },
-  redirects: {
-    '/edge': '/alex-1',
-  },
 });

@@ -30,7 +30,7 @@ const MATRIX = [
 <Layout
   title="Multivac · Deep Pearl AI"
   description="Multivac is an independent, blind evaluation of frontier language models — fresh questions, cross-family judging, no vendor grading its own homework."
-  chapter="02"
+  chapter="01"
 >
   <section class="page-hero">
     <div class="wrap">
@@ -92,7 +92,7 @@ const MATRIX = [
               data-matrix={JSON.stringify(MATRIX)}
             ></canvas>
             <span class="plate-label red recused-label">RECUSED</span>
-            <span class="plate-label" style="bottom:10px;left:30px">AGGREGATE VERDICT DENSITY 0&ndash;1</span>
+            <span class="plate-label mv-density" style="bottom:10px;left:30px"><span>AGGREGATE VERDICT</span> <span>DENSITY 0&ndash;1</span></span>
             <div
               class="matrix-cells"
               id="matrix-cells"
@@ -330,6 +330,13 @@ const MATRIX = [
     color: var(--bg);
   }
 
+  /* on narrow plates a column's bar (as wide as the hidden name) runs into the
+     next column; every code paints above every bar, so none is covered */
+  .matrix-cols .chip .bar-ink .code {
+    position: relative;
+    z-index: 1;
+  }
+
   /* touch fallback — click toggles the lift that hover/focus provide */
   .chip.lifted .bar-ink {
     opacity: 0;
@@ -341,6 +348,14 @@ const MATRIX = [
 
   .chip.lifted {
     z-index: 6;
+  }
+
+  /* unblinded on a narrow plate, a name can be wider than its column: it sits
+     on the page colour, so the neighbouring bars never swallow its ends */
+  .chip:hover .real,
+  .chip:focus-visible .real,
+  .chip.lifted .real {
+    background: var(--bg);
   }
 
   /* ---------- invisible-but-focusable cell inspector ---------- */
@@ -390,6 +405,32 @@ const MATRIX = [
     opacity: 0.85;
   }
 
+  /* the density legend sits on the bottom row; it ends before the last
+     column (87.5%), whose cell is recused, by wrapping between its halves
+     (never inside "0–1") when a narrow plate is too short for one line */
+  .mv-density {
+    max-width: calc(87.5% - 34px);
+  }
+
+  .mv-density span {
+    white-space: nowrap;
+  }
+
+  /* below the breakpoint the corner column is narrower than "Answerers →":
+     right-aligned, the arrow wrapped onto a line of its own and, on the
+     narrowest phones, "Judges ↓" met the first column's bar. Each legend now
+     keeps its arrow and reads from the column's left edge; the first runs on
+     over the empty band above the column codes. */
+  @media (max-width: 880px) {
+    .matrix-corner {
+      align-items: flex-start;
+    }
+
+    .matrix-corner span {
+      white-space: nowrap;
+    }
+  }
+
   @media (max-width: 720px) {
     .matrix-plate {
       aspect-ratio: 1 / 1;
@@ -421,6 +462,20 @@ const MATRIX = [
 
     .matrix-corner {
       font-size: 8.5px;
+    }
+
+    .mv-density {
+      font-size: 9.5px;
+      letter-spacing: 0.08em;
+    }
+
+    /* the last column's stamp ends with its bar instead of centring on it:
+       centred, its (invisible) box ran past a 320px screen, which then
+       scrolled sideways */
+    .matrix-cols .axis-cell:last-child .stamp {
+      left: auto;
+      right: -4px;
+      transform: rotate(-4deg);
     }
   }
 </style>

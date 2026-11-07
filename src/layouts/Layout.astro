@@ -1,9 +1,10 @@
 ---
 import { ClientRouter } from 'astro:transitions';
 import '../styles/global.css';
+import { REPO, REPO_PUBLIC } from '../lib/repo.js';
 const {
   title = 'Deep Pearl AI',
-  description = 'Deep Pearl AI is an independent research lab studying AI evaluation, edge intelligence, and machines that understand the physical world.',
+  description = 'Deep Pearl AI is an independent research lab studying AI evaluation: blind peer evaluation of frontier models, and whether the judges grading them can be trusted.',
   ogType = 'website',
   chapter = '',
 } = Astro.props;
@@ -13,11 +14,8 @@ const ogImage = new URL('/og.png', Astro.site).toString();
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 
 const nav = [
-  { href: '/research', label: 'Research' },
   { href: '/multivac', label: 'Multivac' },
-  { href: '/physics', label: 'Physics' },
-  { href: '/alex-1', label: 'ALEX-1' },
-  { href: '/emote4d', label: 'EMOTE4D' },
+  { href: '/partialcredit', label: 'PartialCredit' },
 ];
 ---
 <!doctype html>
@@ -89,19 +87,15 @@ const nav = [
               <span>Deep Pearl AI</span>
             </a>
             <p>
-              An independent research lab. Evaluation you can trust, intelligence
-              that lives at the edge, and machines that understand the physical
-              world.
+              An independent research lab. Evaluation you can trust, and judges
+              you can check.
             </p>
           </div>
           <div class="footer-col">
             <h4>Lab</h4>
             <ul>
-              <li><a href="/research">Research</a></li>
               <li><a href="/multivac">Multivac</a></li>
-              <li><a href="/physics">Multivac Physics</a></li>
-              <li><a href="/alex-1">ALEX-1</a></li>
-              <li><a href="/emote4d">EMOTE4D</a></li>
+              <li><a href="/partialcredit">PartialCredit</a></li>
             </ul>
           </div>
           <div class="footer-col">
@@ -109,8 +103,7 @@ const nav = [
             <ul>
               <li><a href="https://themultivac.com" rel="noopener">themultivac.com</a></li>
               <li><a href="https://app.themultivac.com" rel="noopener">app.themultivac.com</a></li>
-              <li><a href="https://multivacphysics.com" rel="noopener">multivacphysics.com</a></li>
-              <li><a href="https://emote4d.com" rel="noopener">emote4d.com</a></li>
+              {REPO_PUBLIC && <li><a href={REPO} rel="noopener">partial-credit-judge</a></li>}
               <li><a href="https://github.com/Yash2378" rel="noopener">github.com/Yash2378</a></li>
             </ul>
           </div>
@@ -123,6 +116,21 @@ const nav = [
     </footer>
     <script>
       import { initPage } from '../lib/nacre.js';
+
+      // The header is transition:persist-ed, so a client-side navigation keeps
+      // the old header and drops the incoming page's server-rendered
+      // aria-current. Re-derive it from the URL with the frontmatter's rule.
+      // astro:after-swap fires after the URL changes and inside the view
+      // transition's update, so the new frame never shows a stale underline.
+      function syncNavCurrent() {
+        const path = location.pathname.replace(/\/$/, '') || '/';
+        document.querySelectorAll('.site-nav a').forEach((a) => {
+          if (a.getAttribute('href') === path) a.setAttribute('aria-current', 'page');
+          else a.removeAttribute('aria-current');
+        });
+      }
+
+      document.addEventListener('astro:after-swap', syncNavCurrent);
       document.addEventListener('astro:page-load', initPage);
     </script>
   </body>
