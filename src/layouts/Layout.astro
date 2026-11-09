@@ -16,6 +16,7 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 const nav = [
   { href: '/multivac', label: 'Multivac' },
   { href: '/partialcredit', label: 'PartialCredit' },
+  { href: '/superintelligence', label: 'Superintelligence' },
 ];
 ---
 <!doctype html>
@@ -96,6 +97,7 @@ const nav = [
             <ul>
               <li><a href="/multivac">Multivac</a></li>
               <li><a href="/partialcredit">PartialCredit</a></li>
+              <li><a href="/superintelligence">Superintelligence</a></li>
             </ul>
           </div>
           <div class="footer-col">
@@ -135,3 +137,25 @@ const nav = [
     </script>
   </body>
 </html>
+
+<style is:global>
+  /* Three nav labels (Superintelligence is the longest). On phones the header
+     wraps the nav onto a row of its own: viewport minus the 20px gutters, which
+     on narrow phones is less than the 347px the labels take at 12.5px. From
+     400px down, tighten size, tracking and gaps so all three show in full
+     instead of scrolling out of view (288px of labels, 275px at 340px and below). */
+  @media (max-width: 400px) {
+    .site-header .site-nav {
+      gap: 10px;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+    }
+  }
+
+  @media (max-width: 340px) {
+    .site-header .site-nav {
+      gap: 8px;
+      letter-spacing: 0.02em;
+    }
+  }
+</style>

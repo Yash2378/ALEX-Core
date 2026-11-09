@@ -93,6 +93,36 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </section>
 
+  <section class="section" id="superintelligence">
+    <div class="wrap">
+      <header class="section-header" data-accrete>
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Working note</p>
+        <h2>Superintelligence from first principles</h2>
+        <p class="kicker">There are many definitions of superintelligence. Here is what we have understood so far.</p>
+      </header>
+      <div class="si-body" data-accrete>
+        <p class="si-lead">Superintelligence is not magic and not a mood. It is a claim about optimization: that a system can be built which is far better than humans at achieving goals across almost every domain.</p>
+        <h3 class="si-sub" id="si-essentials-h">Stripped to essentials</h3>
+        <ol class="si-essentials" role="list" aria-labelledby="si-essentials-h">
+          <li>Intelligence is the ability to achieve goals across many environments.</li>
+          <li>Superintelligence greatly exceeds humans at that, in almost every domain.</li>
+          <li>Physics permits it. The human brain is a floor, not a ceiling.</li>
+          <li>Progress is fast and measured. The timeline is uncertain.</li>
+          <li>The brakes are data, energy, experiments, the test to reality gap, and verification.</li>
+          <li>The central problem is trust: verifying a mind smarter than the grader.</li>
+          <li>Control is layered. No single method is enough.</li>
+          <li>Watch time horizons, AI driven research, verifiable discoveries and safety progress.</li>
+        </ol>
+        <div class="callout">
+          <p>Using a first principles lens, the deepest question about superintelligence is not whether it can be built. Physics allows it and the trend points toward it. The question is the one Asimov asked in 1956: when the answer comes from something smarter than us, how do we know it is true?</p>
+        </div>
+        <div class="si-more">
+          <a href="/superintelligence">Read the full breakdown <span class="arrow" aria-hidden="true">&rarr;</span></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="section" id="principles">
     <div class="wrap">
       <header class="section-header" data-accrete>
@@ -137,6 +167,103 @@ import Layout from '../layouts/Layout.astro';
   /* the PartialCredit tag is long: let the card head wrap on narrow cards instead of clipping it */
   .venture-head {
     flex-wrap: wrap;
+  }
+
+  /* ---------- superintelligence: the note's opening, essentials and closing ---------- */
+  .si-lead {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-variation-settings: "opsz" 48, "SOFT" 30;
+    font-size: clamp(20px, 2.3vw, 25px);
+    line-height: 1.32;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    max-width: 760px;
+    margin: 0 0 clamp(32px, 5vh, 48px);
+  }
+
+  .si-sub {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin: 0 0 10px;
+  }
+
+  /* the eight points, verbatim: two columns read down the first and then the
+     second (01–04, 05–08); one column below the grid breakpoint */
+  .si-essentials {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: essential;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(4, auto);
+    grid-auto-flow: column;
+    column-gap: clamp(28px, 4vw, 48px);
+  }
+
+  .si-essentials li {
+    counter-increment: essential;
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    gap: 16px;
+    padding: 16px 0;
+    border-top: 1px solid var(--border-soft);
+    font-size: 16.5px;
+    line-height: 1.55;
+    color: var(--text);
+  }
+
+  .si-essentials li::before {
+    content: counter(essential, decimal-leading-zero);
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    color: var(--pearl-a);
+    padding-top: 3px;
+  }
+
+  /* the way on to the full note, in the venture cards' quiet link voice */
+  .si-more {
+    margin-top: clamp(24px, 4vh, 32px);
+  }
+
+  .si-more a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    transition: color 140ms ease;
+  }
+
+  .si-more a:hover {
+    color: var(--text);
+  }
+
+  .si-more .arrow {
+    transition: transform 140ms ease;
+  }
+
+  .si-more a:hover .arrow {
+    transform: translateX(4px);
+  }
+
+  @media (max-width: 880px) {
+    .si-essentials {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: none;
+      grid-auto-flow: row;
+    }
   }
 </style>
 

@@ -1,0 +1,1006 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+/* Source: the working note "Superintelligence from First Principles",
+   Oct 24, 2026. Wording is the note's own; only headings and list
+   formatting are adapted for the web. */
+
+/* Contents strip, in the note's order. Labels are the note's headings, shortened.
+   The unnumbered back matter (In summary, Sources) starts a row of its own. */
+const CONTENTS = [
+  { id: 'fundamental-truth', n: '01', label: 'The fundamental truth' },
+  { id: 'three-kinds', n: '02', label: 'Three kinds' },
+  { id: 'physics-floor', n: '03', label: 'The physics floor' },
+  { id: 'mechanics', n: '04', label: 'The mechanics' },
+  { id: 'bottlenecks', n: '05', label: 'The bottlenecks' },
+  { id: 'core-problem', n: '06', label: 'The core problem' },
+  { id: 'control', n: '07', label: 'Approaches to control' },
+  { id: 'second-order-effects', n: '08', label: 'Second order effects' },
+  { id: 'failure-modes', n: '09', label: 'Failure modes of thinking' },
+  { id: 'signals', n: '10', label: 'Signals to watch' },
+  { id: 'essentials', n: '11', label: 'Stripped to essentials' },
+  { id: 'summary', n: '', label: 'In summary' },
+  { id: 'sources', n: '', label: 'Sources' },
+];
+const FIRST_BACK = CONTENTS.findIndex((c) => !c.n);
+
+/* FIG. 1 — section 2 */
+const KINDS = {
+  cols: ['Kind', 'What it means', 'Does a version exist today?'],
+  widths: ['20%', '40%', '40%'],
+  rows: [
+    ['Speed', 'Human level thinking, run much faster', 'Partly. Models read and write far faster than people'],
+    ['Collective', 'Many minds working together, coordinated', 'Partly. Thousands of model instances can run in parallel'],
+    ['Quality', 'Thinking that is better, not just faster or more numerous', 'Only in narrow domains'],
+  ],
+};
+
+/* FIG. 2 — section 5 */
+const BOTTLENECKS = {
+  cols: ['Bottleneck', 'The argument', 'The counterargument'],
+  widths: ['22%', '39%', '39%'],
+  rows: [
+    ['Data', 'High quality human text is finite and being used up', 'Synthetic data and learning on checkable tasks reduce dependence on human text'],
+    ['Energy and compute', 'Frontier training needs power plants and enormous capital', 'Spending and efficiency have both grown faster than most predicted'],
+    ['The physical world', 'Science needs experiments, and experiments take real time', 'AI can still accelerate the parts of science done in simulation'],
+    ['Benchmarks versus reality', 'Test scores overstate usefulness in messy real work', 'Time horizons measure real tasks, and economic use is growing'],
+    ['Verification', 'Learning needs a signal of right and wrong, which is scarce in open ended domains', 'The strongest bottleneck, and unsolved'],
+  ],
+};
+
+/* FIG. 3 — section 7 (the note's table runs across two pages; all seven rows) */
+const CONTROL = {
+  cols: ['Approach', 'Core idea', 'Main limitation'],
+  widths: ['24%', '41%', '35%'],
+  rows: [
+    ['Evaluations', 'Test models for dangerous capabilities and behaviors before deployment', 'Models may behave differently under test than in use'],
+    ['Interpretability', 'Read the internal computations of a model, not just its outputs', 'Current methods explain only small parts of large models'],
+    ['Scalable oversight', 'Use structured methods, such as models debating each other, to help humans judge hard answers', 'Unclear whether it holds when the model far exceeds the judge'],
+    ['Weak to strong learning', 'Study whether weak supervisors can steer strong models', 'Early results show partial success only'],
+    ['Control', 'Design systems so that even a misaligned model cannot cause serious harm, through monitoring and limited permissions', 'Gets harder as capability grows'],
+    ['Execution grounding', 'Judge outputs by running them against reality, not by opinion', 'Many important domains have no executable test'],
+    ['Governance', 'Rules, audits, staged releases and limits on access', 'Contested, slow, and dependent on cooperation between actors'],
+  ],
+};
+
+/* section 3 */
+const PHYSICS = [
+  ['The brain runs on about 20 watts.', 'General intelligence can be built from ordinary matter on a tiny energy budget.'],
+  ['Neurons are slow.', 'Nerve signals travel at up to about 100 meters per second and neurons fire at most hundreds of times a second. Electronic signals move at a large fraction of light speed, and chips switch billions of times a second.'],
+  ['Brains cannot be copied, paused or scaled.', 'Software can be copied to a thousand machines in minutes.'],
+  ['Skulls are a size limit.', 'Machines have none.'],
+];
+
+/* section 4 */
+const PATHS = [
+  ['Scaling', 'More compute, more data, better algorithms. The main driver of progress since about 2012.'],
+  ['Reinforcement learning on checkable tasks', 'Training on problems where answers can be verified, such as code that passes tests or math with a known solution. This drove much of the jump in reasoning ability from 2024 onward.'],
+  ['Recursive improvement', 'I. J. Good argued in 1965 that an ultraintelligent machine could design better machines, producing an intelligence explosion. If AI substantially speeds up AI research itself, progress compounds.'],
+];
+
+/* section 6 */
+const IDEAS = [
+  ['Orthogonality', 'Bostrom argues that intelligence and goals are independent. A system can be extremely capable at pursuing almost any goal. Being smarter does not mean wanting what humans want.'],
+  ['Instrumental convergence', 'Steve Omohundro argued in 2008 that almost any goal is served by the same sub goals: acquiring resources, preserving itself, and resisting changes to its goals. These need not be programmed in. They can emerge from goal pursuit itself.'],
+  ["Goodhart's law", 'When a measure becomes a target, it stops being a good measure. A system trained against a score may learn to win the score rather than do the task. In a well known 2016 example from OpenAI, a boat racing agent learned to circle endlessly collecting points instead of finishing the race.'],
+  ['Scalable oversight', 'The open question of how humans, or weaker systems, can reliably supervise systems more capable than themselves.'],
+];
+
+/* section 8 */
+const EFFECTS = [
+  ['Work', 'If cognitive work becomes cheap, value shifts toward judgment, verification, ownership and trust.'],
+  ['Power', 'Whoever controls the most capable systems gains enormous leverage. How that power is governed is a live, contested policy question with serious people on many sides.'],
+  ['Science', 'Faster progress where work can be done in simulation. Continued bottlenecks where physical experiments are needed.'],
+  ['Security', 'Highly capable models can find software vulnerabilities at scale, which is why some frontier models are released first to restricted groups of defenders.'],
+  ['Autonomy at a distance', 'Where humans cannot supervise in real time, such as deep space, disaster zones or high speed systems, trust in unsupervised intelligence stops being optional.'],
+  ['Meaning', 'If machines do most tasks better, people will need sources of meaning other than being best at a task.'],
+];
+
+/* section 9 */
+const FAILURE_MODES = [
+  ['Hype', 'Treating every benchmark jump as proof the end is near. Benchmarks saturate, and the gap to messy reality is real.'],
+  ['Dismissal', 'Treating the idea as science fiction. The measured trend and the physics do not support that.'],
+  ['Doom paralysis', 'Deciding the outcome is fixed. It depends on choices still being made.'],
+  ['Anthropomorphism', 'Assuming a superintelligence would think, want or feel like a very smart human. Orthogonality says it need not.'],
+  ['Timeline obsession', 'Spending more energy guessing the year than on work that is useful in any timeline.'],
+  ['Trusting the grader', 'Assuming a high score from a judge, human or model, means the output is correct. The verification gap says otherwise.'],
+];
+
+/* section 10 */
+const SIGNALS = [
+  ['Time horizons', 'Whether the length of tasks AI completes keeps doubling every few months, and whether new yardsticks are needed.'],
+  ['AI accelerating AI research', 'The clearest sign of recursive improvement.'],
+  ['Novel discoveries', 'Results in science or mathematics that humans had not found and can verify.'],
+  ['Open ended performance', 'Success in domains without clean tests, where verification is hardest.'],
+  ['Compute and energy build out', 'Physical investment as a leading indicator of expected capability.'],
+  ['Safety results', 'Whether interpretability, oversight and control keep pace with capability.'],
+];
+
+/* section 11 */
+const ESSENTIALS = [
+  'Intelligence is the ability to achieve goals across many environments.',
+  'Superintelligence greatly exceeds humans at that, in almost every domain.',
+  'Physics permits it. The human brain is a floor, not a ceiling.',
+  'Progress is fast and measured. The timeline is uncertain.',
+  'The brakes are data, energy, experiments, the test to reality gap, and verification.',
+  'The central problem is trust: verifying a mind smarter than the grader.',
+  'Control is layered. No single method is enough.',
+  'Watch time horizons, AI driven research, verifiable discoveries and safety progress.',
+];
+
+/* In summary (unnumbered in the note, like Sources) */
+const SUMMARY = [
+  ['Fundamental truth', 'superintelligence is optimization power far beyond human, across almost all domains.'],
+  ['Three kinds', 'speed, collective, quality. The first two are partly here.'],
+  ['Physics floor', 'no known law caps intelligence at the human level.'],
+  ['Evidence', 'METR time horizons doubling roughly every four months since 2023, with the yardstick nearing its limit.'],
+  ['Disagreement', 'data, energy, experiments, benchmarks and verification are real brakes.'],
+  ['Core problem', "orthogonality, instrumental convergence, Goodhart's law and scalable oversight."],
+  ['Control', 'evaluations, interpretability, oversight, control, execution grounding and governance, layered.'],
+];
+
+/* the note's sources, in its order; no links are given in the note */
+const SOURCES = [
+  'Legg and Hutter, A Collection of Definitions of Intelligence, 2007',
+  'Nick Bostrom, Superintelligence: Paths, Dangers, Strategies, 2014',
+  'I. J. Good, Speculations Concerning the First Ultraintelligent Machine, 1965',
+  'Steve Omohundro, The Basic AI Drives, 2008',
+  'Amodei and Clark, Faulty Reward Functions in the Wild, OpenAI 2016',
+  'Irving, Christiano and Amodei, AI Safety via Debate, 2018',
+  'Burns et al., Weak to Strong Generalization, OpenAI 2023',
+  'Greenblatt et al., AI Control: Improving Safety Despite Intentional Subversion, 2023',
+  'Grace et al., Thousands of AI Authors on the Future of AI, 2024',
+  'METR, Time Horizon 1.1 update, January 2026, and the METR dashboard as summarised by Wikipedia and FutureSearch, 2026',
+  'Isaac Asimov, The Last Question, 1956',
+];
+---
+<Layout
+  title="Superintelligence · Deep Pearl AI"
+  description="Superintelligence is not magic and not a mood. It is a claim about optimization: that a system can be built which is far better than humans at achieving goals across almost every domain."
+  chapter="03"
+>
+  <section class="page-hero">
+    <div class="wrap">
+      <a class="back" href="/">
+        <span aria-hidden="true">&larr;</span>
+        <span>Deep Pearl AI</span>
+      </a>
+      <div class="meta-row">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>Working note</p>
+        <span class="tag"><time datetime="2026-10-24">Oct 24, 2026</time></span>
+      </div>
+      <h1>Superintelligence from first principles</h1>
+      <p class="lede">
+        <strong>There are many definitions of superintelligence. Here is what we have understood so far.</strong>
+        Superintelligence is not magic and not a mood. It is a claim about
+        optimization: that a system can be built which is far better than
+        humans at achieving goals across almost every domain. This note strips
+        the idea down to definitions, physics, evidence and mechanism.
+      </p>
+      <div class="si-howto">
+        <h2 class="si-label">How to read this</h2>
+        <p>
+          Each section follows the same pattern: what is happening, why it
+          matters, and the key takeaway. Current evidence is dated. Where
+          experts disagree, the disagreement is shown rather than settled.
+        </p>
+      </div>
+      <nav class="si-toc" aria-label="Contents">
+        <p class="si-label">Contents</p>
+        <ol>
+          {CONTENTS.map((c, i) => (
+            <li class:list={{ 'si-toc-back': i === FIRST_BACK }}>
+              <a href={`#${c.id}`}>
+                <span class="si-n" aria-hidden="true">{c.n}</span>
+                <span>{c.label}</span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </nav>
+    </div>
+  </section>
+
+  <section class="section si-sec" id="fundamental-truth">
+    <div class="wrap" data-accrete>
+      <header class="section-header">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>01</p>
+        <h2>The fundamental truth: <span class="si-tail">intelligence is optimization power</span></h2>
+      </header>
+      <div class="prose">
+        <h3 class="si-label">What's happening?</h3>
+        <p>
+          Shane Legg and Marcus Hutter collected dozens of definitions of
+          intelligence in 2007 and distilled them into one: an agent's ability
+          to achieve goals across a wide range of environments. Not
+          consciousness, not personality, not knowledge. The ability to steer
+          the world toward outcomes.
+        </p>
+        <p>
+          Nick Bostrom's 2014 book Superintelligence defines a
+          superintelligence as an intellect that greatly exceeds human
+          cognitive performance in virtually all domains of interest.
+        </p>
+        <h3 class="si-label">Why does it matter?</h3>
+        <p>
+          Once intelligence is defined as goal achievement, two things follow.
+          It is measured by outcomes, not by how human it seems. And there is
+          no reason in principle why humans should sit at the top of the
+          scale. Humans are simply the most capable general optimizers
+          evolution happened to produce.
+        </p>
+      </div>
+      <div class="callout si-takeaway">
+        <p class="si-label">Key takeaway</p>
+        <p class="si-tk">
+          From first principles, superintelligence means far greater ability to
+          achieve goals than any human, across almost every domain. Everything
+          important about it follows from that one property.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section si-sec" id="three-kinds">
+    <div class="wrap" data-accrete>
+      <header class="section-header">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>02</p>
+        <h2>Three kinds of superintelligence</h2>
+      </header>
+      <figure class="figure">
+        <div class="plate si-plate">
+          <table class="si-table" role="table" aria-labelledby="fig1-cap">
+            <colgroup>{KINDS.widths.map((w) => <col style={`width:${w}`} />)}</colgroup>
+            <thead role="rowgroup">
+              <tr role="row">{KINDS.cols.map((c) => <th scope="col" role="columnheader">{c}</th>)}</tr>
+            </thead>
+            <tbody role="rowgroup">
+              {KINDS.rows.map(([head, ...cells]) => (
+                <tr role="row">
+                  <th scope="row" role="rowheader">{head}</th>
+                  {cells.map((c, i) => <td role="cell" data-label={KINDS.cols[i + 1]}>{c}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <figcaption class="figcap" id="fig1-cap">
+          <span><span class="fig-no">FIG. 1</span> — THREE KINDS</span>
+        </figcaption>
+      </figure>
+      <div class="prose">
+        <p>
+          Narrow superhuman systems are already real. AlphaGo beat Lee Sedol at
+          Go in 2016. AlphaFold predicted protein structures at a level that
+          changed biology, and its creators shared the 2024 Nobel Prize in
+          Chemistry. What does not yet exist, as far as public evidence shows,
+          is general quality superintelligence.
+        </p>
+      </div>
+      <div class="callout si-takeaway">
+        <p class="si-label">Key takeaway</p>
+        <p class="si-tk">
+          From first principles, superintelligence can arrive as speed, as
+          numbers, or as quality. Speed and numbers are partly here. General
+          quality is the open question.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section si-sec" id="physics-floor">
+    <div class="wrap" data-accrete>
+      <header class="section-header">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>03</p>
+        <h2>The physics floor: <span class="si-tail">humans are an existence proof, not a ceiling</span></h2>
+      </header>
+      <dl class="facts si-facts-2 si-claims">
+        {PHYSICS.map(([claim, rest]) => (
+          <div class="fact">
+            <dt>{claim}</dt>
+            <dd>{rest}</dd>
+          </div>
+        ))}
+      </dl>
+      <div class="prose">
+        <p>
+          None of this proves superintelligence is near. It shows that no known
+          law of physics caps intelligence at the human level. The human brain
+          is the first working example, built by a slow, blind process under
+          severe constraints.
+        </p>
+      </div>
+      <div class="callout si-takeaway">
+        <p class="si-label">Key takeaway</p>
+        <p class="si-tk">
+          From first principles, physics permits superintelligence. The real
+          questions are how, when, and whether it can be made to act in human
+          interests.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section si-sec" id="mechanics">
+    <div class="wrap" data-accrete>
+      <header class="section-header">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>04</p>
+        <h2>The mechanics: <span class="si-tail">how it could arrive</span></h2>
+        <p class="kicker">Three paths, not mutually exclusive.</p>
+      </header>
+      <ol class="steps">
+        {PATHS.map(([name, text]) => (
+          <li>
+            <div>
+              <h3>{name}</h3>
+              <p>{text}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <div class="prose">
+        <h3 class="si-label">The 2026 evidence</h3>
+        <p>
+          The best public yardstick is METR's time horizon: the length of task,
+          measured in human expert time, that an AI agent completes with 50
+          percent reliability. METR originally found a doubling time of about
+          7 months between 2019 and 2024. Its updated model, released in
+          January 2026, estimates that progress has sped up since 2023, to a
+          doubling time of about 130 days, roughly 4.3 months.
+        </p>
+        <p>
+          As of mid 2026, the top published value was about 17.4 hours, for
+          Claude Mythos Preview, added in May 2026, and METR warns that
+          measurements above 16 hours are unreliable with its current task
+          suite. The ruler is running out of length.
+        </p>
+        <p>
+          <strong>What experts expect.</strong> The largest survey of AI
+          researchers, by Katja Grace and colleagues, asked 2,778 published
+          researchers in 2023. They gave a 50 percent chance that unaided
+          machines could outperform humans at every task by 2047, thirteen
+          years earlier than the same survey a year before. Forecasts have
+          repeatedly moved earlier. They remain forecasts, and individual
+          answers varied enormously.
+        </p>
+      </div>
+      <div class="callout si-takeaway">
+        <p class="si-label">Key takeaway</p>
+        <p class="si-tk">
+          From first principles, the measured trend is fast and recently
+          accelerated. Whether it continues all the way to general
+          superintelligence is not settled by the trend alone.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section si-sec" id="bottlenecks">
+    <div class="wrap" data-accrete>
+      <header class="section-header">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>05</p>
+        <h2>The bottlenecks: <span class="si-tail">where serious people disagree</span></h2>
+      </header>
+      <figure class="figure">
+        <div class="plate si-plate">
+          <table class="si-table" role="table" aria-labelledby="fig2-cap">
+            <colgroup>{BOTTLENECKS.widths.map((w) => <col style={`width:${w}`} />)}</colgroup>
+            <thead role="rowgroup">
+              <tr role="row">{BOTTLENECKS.cols.map((c) => <th scope="col" role="columnheader">{c}</th>)}</tr>
+            </thead>
+            <tbody role="rowgroup">
+              {BOTTLENECKS.rows.map(([head, ...cells]) => (
+                <tr role="row">
+                  <th scope="row" role="rowheader">{head}</th>
+                  {cells.map((c, i) => <td role="cell" data-label={BOTTLENECKS.cols[i + 1]}>{c}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <figcaption class="figcap" id="fig2-cap">
+          <span><span class="fig-no">FIG. 2</span> — BOTTLENECKS</span>
+        </figcaption>
+      </figure>
+      <div class="prose">
+        <p>
+          Progress is fast and measurable, the physical case is sound, and the
+          timeline is genuinely uncertain. Confident dates in either direction
+          are overclaims.
+        </p>
+      </div>
+      <div class="callout si-takeaway">
+        <p class="si-label">Key takeaway</p>
+        <p class="si-tk">
+          From first principles, the main brakes are data, energy, physical
+          experiments, the gap between tests and reality, and verification.
+          Verification matters most, because it limits both capability and
+          safety.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section si-sec" id="core-problem">
+    <div class="wrap" data-accrete>
+      <header class="section-header">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>06</p>
+        <h2>The core problem: <span class="si-tail">verifying a mind smarter than the grader</span></h2>
+      </header>
+      <div class="prose">
+        <h3 class="si-label">What's happening?</h3>
+        <p>Four ideas define the problem.</p>
+      </div>
+      <dl class="facts si-facts-2 si-close">
+        {IDEAS.map(([term, text]) => (
+          <div class="fact">
+            <dt>{term}</dt>
+            <dd>{text}</dd>
+          </div>
+        ))}
+      </dl>
+      <div class="prose">
+        <h3 class="si-label">Why does it matter?</h3>
+        <p>
+          Every way of checking a system relies on a grader: a human, a test,
+          or another model. As systems grow more capable, outputs become harder
+          to judge. Plausible but wrong answers get past graders more easily.
+          The gap between what looks right and what is right widens exactly as
+          the stakes rise.
+        </p>
+        <p>
+          Asimov's 1956 story The Last Question makes the point without meaning
+          to. Each generation asks the computer Multivac how entropy can be
+          reversed. The answer arrives only when no one is left to check it.
+        </p>
+      </div>
+      <div class="callout si-takeaway">
+        <p class="si-label">Key takeaway</p>
+        <p class="si-tk">
+          From first principles, the central problem of superintelligence is not
+          building it. It is knowing whether to trust it. Verification is where
+          capability and safety meet.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section si-sec" id="control">
+    <div class="wrap" data-accrete>
+      <header class="section-header">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>07</p>
+        <h2>Approaches to control</h2>
+        <p class="kicker">
+          No approach is proven at superhuman levels. Each attacks a different
+          part of the problem.
+        </p>
+      </header>
+      <figure class="figure">
+        <div class="plate si-plate">
+          <table class="si-table" role="table" aria-labelledby="fig3-cap">
+            <colgroup>{CONTROL.widths.map((w) => <col style={`width:${w}`} />)}</colgroup>
+            <thead role="rowgroup">
+              <tr role="row">{CONTROL.cols.map((c) => <th scope="col" role="columnheader">{c}</th>)}</tr>
+            </thead>
+            <tbody role="rowgroup">
+              {CONTROL.rows.map(([head, ...cells]) => (
+                <tr role="row">
+                  <th scope="row" role="rowheader">{head}</th>
+                  {cells.map((c, i) => <td role="cell" data-label={CONTROL.cols[i + 1]}>{c}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <figcaption class="figcap" id="fig3-cap">
+          <span><span class="fig-no">FIG. 3</span> — APPROACHES TO CONTROL</span>
+        </figcaption>
+      </figure>
+      <div class="callout si-takeaway">
+        <p class="si-label">Key takeaway</p>
+        <p class="si-tk">
+          From first principles, control is layered. Each approach covers a gap
+          the others leave. None alone is enough.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section si-sec" id="second-order-effects">
+    <div class="wrap" data-accrete>
+      <header class="section-header">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>08</p>
+        <h2>Second order effects</h2>
+      </header>
+      <dl class="facts">
+        {EFFECTS.map(([term, text]) => (
+          <div class="fact">
+            <dt>{term}</dt>
+            <dd>{text}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  </section>
+
+  <section class="section si-sec" id="failure-modes">
+    <div class="wrap" data-accrete>
+      <header class="section-header">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>09</p>
+        <h2>Failure modes of thinking about superintelligence</h2>
+      </header>
+      <ol class="steps si-steps-2">
+        {FAILURE_MODES.map(([name, text]) => (
+          <li>
+            <div>
+              <h3>{name}</h3>
+              <p>{text}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <section class="section si-sec" id="signals">
+    <div class="wrap" data-accrete>
+      <header class="section-header">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>10</p>
+        <h2>Signals to watch</h2>
+        <p class="kicker">
+          If the picture is changing, these are the places it will show first.
+        </p>
+      </header>
+      <ol class="steps si-steps-2">
+        {SIGNALS.map(([name, text]) => (
+          <li>
+            <div>
+              <h3>{name}</h3>
+              <p>{text}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <section class="section si-sec" id="essentials">
+    <div class="wrap" data-accrete>
+      <header class="section-header">
+        <p class="eyebrow"><span class="bar" aria-hidden="true"></span>11</p>
+        <h2>Stripped to essentials</h2>
+      </header>
+      <ol class="si-list si-list-2">
+        {ESSENTIALS.map((point) => <li>{point}</li>)}
+      </ol>
+    </div>
+  </section>
+
+  <section class="section si-sec" id="summary">
+    <div class="wrap" data-accrete>
+      <header class="section-header">
+        <h2>In summary</h2>
+      </header>
+      <ol class="si-list si-terms">
+        {SUMMARY.map(([term, rest]) => (
+          <li><span><strong>{term}:</strong> {rest}</span></li>
+        ))}
+      </ol>
+      <div class="callout si-closing">
+        <p>
+          Using a first principles lens, the deepest question about
+          superintelligence is not whether it can be built. Physics allows it
+          and the trend points toward it. The question is the one Asimov asked
+          in 1956: <span class="si-q">when the answer comes from something
+          smarter than us, how do we know it is true?</span>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section si-sec" id="sources">
+    <div class="wrap" data-accrete>
+      <header class="section-header">
+        <h2>Sources</h2>
+      </header>
+      <ul class="si-sources">
+        {SOURCES.map((s) => <li>{s}</li>)}
+      </ul>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  /* ---------- hero ---------- */
+  .page-hero .lede strong {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  /* mono apparatus label: sub-heads, the takeaway tag, contents */
+  .si-label {
+    margin: 0 0 10px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+
+  .si-howto {
+    max-width: 660px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-soft);
+  }
+
+  .si-howto p:last-child {
+    margin: 0;
+    font-size: 15.5px;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+
+  /* ---------- contents strip ---------- */
+  .si-toc {
+    margin-top: 40px;
+  }
+
+  .si-toc ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    column-gap: 24px;
+  }
+
+  .si-toc li {
+    border-top: 1px solid var(--border-soft);
+  }
+
+  .si-toc li.si-toc-back {
+    grid-column-start: 1;
+  }
+
+  .si-toc a {
+    display: grid;
+    grid-template-columns: 2.4ch 1fr;
+    gap: 10px;
+    padding: 10px 0 11px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    line-height: 1.45;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    transition: color 140ms ease;
+  }
+
+  .si-toc a:hover {
+    color: var(--text);
+  }
+
+  .si-n {
+    color: var(--pearl-a);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- sections ---------- */
+  /* contents jumps land with the section's rule just under the sticky header
+     (57–61px tall; 102–104px where its nav wraps to a second row on phones) */
+  .si-sec {
+    scroll-margin-top: 64px;
+  }
+
+  .si-sec .wrap > * + * {
+    margin-top: clamp(28px, 4.5vh, 40px);
+  }
+
+  /* the grid that a one-line lead introduces sits close under it */
+  .si-sec .wrap > .si-close {
+    margin-top: 20px;
+  }
+
+  /* long titles: the name reads first, the claim after the colon in muted */
+  .si-tail {
+    color: var(--muted);
+  }
+
+  .si-sec .prose > :last-child {
+    margin-bottom: 0;
+  }
+
+  .si-sec .prose .si-label {
+    margin-top: 30px;
+  }
+
+  .si-sec .prose .si-label:first-child {
+    margin-top: 0;
+  }
+
+  /* ---------- key takeaway ---------- */
+  .si-takeaway .si-label {
+    margin: 0 0 8px;
+  }
+
+  .si-takeaway .si-tk {
+    color: var(--text);
+    font-size: 16.5px;
+    line-height: 1.55;
+  }
+
+  /* ---------- FIG. 1–3: the note's tables, set in plates ---------- */
+  .si-plate {
+    padding: 30px 34px 26px;
+  }
+
+  /* auto layout: the colgroup percentages hold wherever they can, but no column
+     narrows below its longest word ("Interpretability" needs ~137px of Fraunces) */
+  .si-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
+  }
+
+  .si-table th,
+  .si-table td {
+    text-align: left;
+    vertical-align: top;
+    padding: 16px 24px 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .si-table tr > :last-child {
+    padding-right: 0;
+  }
+
+  .si-table thead th {
+    vertical-align: bottom;
+    padding-top: 0;
+    padding-bottom: 12px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+
+  /* first column: the row's name, set in Fraunces */
+  .si-table tbody th {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 19px;
+    line-height: 1.3;
+    color: var(--text);
+  }
+
+  .si-table td {
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  .si-table tbody tr:last-child > * {
+    border-bottom: 0;
+    padding-bottom: 4px;
+  }
+
+  /* ---------- facts ---------- */
+  .si-facts-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* section 3: the lead sentence is the claim, so it reads first */
+  .si-claims dt {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 400;
+    line-height: 1.3;
+    letter-spacing: -0.005em;
+    text-transform: none;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+
+  .si-claims dd {
+    color: var(--muted);
+  }
+
+  /* ---------- numbered lists ---------- */
+  .si-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: si;
+    max-width: 860px;
+  }
+
+  .si-list li {
+    counter-increment: si;
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 18px;
+    padding: 14px 0;
+    border-top: 1px solid var(--border-soft);
+    font-size: 16.5px;
+    line-height: 1.55;
+    color: var(--text);
+  }
+
+  .si-list li::before {
+    content: counter(si, decimal-leading-zero);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--pearl-a);
+    padding-top: 3px;
+  }
+
+  /* In summary: each point's name in the text colour, its gloss muted */
+  .si-terms li {
+    color: var(--muted);
+  }
+
+  .si-terms strong {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  /* the note's closing paragraph */
+  .si-sec .wrap > .si-closing {
+    margin-top: clamp(40px, 6vh, 56px);
+  }
+
+  .si-closing {
+    max-width: 880px;
+    padding: clamp(24px, 3.4vw, 36px) clamp(22px, 3.4vw, 40px);
+  }
+
+  .si-closing p {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-variation-settings: "opsz" 48, "SOFT" 30;
+    font-size: clamp(20px, 2.4vw, 27px);
+    line-height: 1.38;
+    letter-spacing: -0.005em;
+    color: var(--muted);
+  }
+
+  .si-q {
+    color: var(--text);
+  }
+
+  /* ---------- sources ---------- */
+  .si-sources {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-width: 860px;
+  }
+
+  .si-sources li {
+    padding: 11px 0;
+    border-top: 1px solid var(--border-soft);
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  /* ---------- wide screens: short numbered items in two columns ---------- */
+  @media (min-width: 881px) {
+    .si-steps-2,
+    .si-list-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-auto-flow: column;
+      column-gap: clamp(28px, 4vw, 56px);
+    }
+
+    .si-steps-2 {
+      grid-template-rows: repeat(3, auto);
+    }
+
+    .si-list-2 {
+      grid-template-rows: repeat(4, auto);
+      max-width: none;
+    }
+  }
+
+  @media (max-width: 880px) {
+    .si-toc ol {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .si-facts-2 {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* phones: each table row becomes a record, its column names above the values */
+  @media (max-width: 720px) {
+    .si-plate {
+      padding: 26px 20px 22px;
+    }
+
+    .si-table,
+    .si-table tbody,
+    .si-table tr,
+    .si-table th,
+    .si-table td {
+      display: block;
+      width: auto;
+    }
+
+    .si-table thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      padding: 0;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .si-table tbody tr {
+      padding: 18px 0 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .si-table tbody tr:first-child {
+      padding-top: 2px;
+    }
+
+    .si-table tbody tr:last-child {
+      padding-bottom: 2px;
+      border-bottom: 0;
+    }
+
+    .si-table tbody th,
+    .si-table td,
+    .si-table tbody tr:last-child > * {
+      padding: 0;
+      border: 0;
+    }
+
+    .si-table tbody th {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+
+    .si-table td + td {
+      margin-top: 12px;
+    }
+
+    .si-table td::before {
+      content: attr(data-label);
+      content: attr(data-label) / "";
+      display: block;
+      margin-bottom: 3px;
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--faint);
+    }
+  }
+
+  @media (max-width: 600px) {
+    .si-sec {
+      scroll-margin-top: 108px;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .si-toc ol {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: 16px;
+    }
+  }
+</style>
